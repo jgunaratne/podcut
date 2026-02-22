@@ -20,6 +20,7 @@ final class AudioPlayerManager {
 
     init() {
         configureAudioSession()
+        setupRemoteCommandCenter()
     }
 
     deinit {
@@ -47,16 +48,19 @@ final class AudioPlayerManager {
 
         addTimeObserver()
         observeDuration(of: playerItem)
+        updateNowPlayingInfo()
     }
 
     func pause() {
         player?.pause()
         isPlaying = false
+        updateNowPlayingInfo()
     }
 
     func resume() {
         player?.play()
         isPlaying = true
+        updateNowPlayingInfo()
     }
 
     func togglePlayPause() {
@@ -72,6 +76,7 @@ final class AudioPlayerManager {
         let target = CMTime(
             seconds: progress * duration, preferredTimescale: 600)
         player?.seek(to: target)
+        updateNowPlayingInfo()
     }
 
     func skipForward(_ seconds: TimeInterval = 30) {
@@ -80,6 +85,7 @@ final class AudioPlayerManager {
             player.currentTime(),
             CMTime(seconds: seconds, preferredTimescale: 600))
         player.seek(to: target)
+        updateNowPlayingInfo()
     }
 
     func skipBackward(_ seconds: TimeInterval = 15) {
@@ -88,6 +94,7 @@ final class AudioPlayerManager {
             player.currentTime(),
             CMTime(seconds: seconds, preferredTimescale: 600))
         player.seek(to: target)
+        updateNowPlayingInfo()
     }
 
     // MARK: - Formatting
@@ -135,6 +142,59 @@ final class AudioPlayerManager {
             }
             let seconds = try? await item.asset.load(.duration).seconds
             self.duration = seconds ?? 0
+            self.updateNowPlayingInfo()
         }
+    }
+
+    // MARK: - Now Playing & Lock Screen Controls
+
+    private func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        commandCenter.playCommand.addTarget { [weak self] _ in
+            self?.resume()
+            return .success
+        }
+
+        commandCenter.pauseCommand.addTarget { [weak self] _ in
+            self?.pause()
+            return .success
+        }
+
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.togglePlayPause()
+            return .success
+        }
+
+        commandCenter.skipForwardCommand.preferredIntervals = [30]
+        commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+            self?.skipForward()
+            return .success
+        }
+
+        commandCenter.skipBackwardCommand.preferredIntervals = [15]
+        commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+            self?.skipBackward()
+            return .success
+        }
+
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self,
+                  let positionEvent = event as? MPChangePlaybackPositionCommandEvent
+            else { return .commandFailed }
+            let progress = positionEvent.positionTime / max(self.duration, 1)
+            self.seek(to: progress)
+            return .success
+        }
+    }
+
+    private func updateNowPlayingInfo() {
+        var info = [String: Any]()
+        info[MPMediaItemPropertyTitle] = currentEpisode?.title ?? "Podcut"
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+        info[MPMediaItemPropertyPlaybackDuration] = duration
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 }
