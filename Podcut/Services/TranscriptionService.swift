@@ -64,8 +64,9 @@ final class TranscriptionService {
             let transcriber = SpeechTranscriber(locale: locale, preset: .transcription)
 
             // 3. Install assets if needed.
+            progress = "Checking speech model…"
             if let installationRequest = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-                progress = "Downloading speech model…"
+                progress = "Downloading speech model (first time only)…"
                 try await installationRequest.downloadAndInstall()
             }
 

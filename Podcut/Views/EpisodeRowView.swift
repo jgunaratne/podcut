@@ -47,7 +47,7 @@ struct EpisodeRowView: View {
             // Transcribe button.
             if episode.audioURL != nil {
                 NavigationLink {
-                    TranscriptionView(episode: episode)
+                    EpisodePageView(episode: episode)
                 } label: {
                     Image(systemName: "text.below.photo")
                         .font(.body)
