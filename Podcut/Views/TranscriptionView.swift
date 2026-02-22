@@ -5,6 +5,11 @@ struct TranscriptionView: View {
     let episode: Episode
     @State private var service = TranscriptionService()
 
+    // Summary state.
+    @State private var summaryText: String = ""
+    @State private var isSummarizing = false
+    @State private var summaryError: String?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -21,12 +26,15 @@ struct TranscriptionView: View {
                 }
                 .padding(.horizontal)
 
-                // Status / progress.
+                // Progress bar.
                 if service.isTranscribing {
-                    HStack(spacing: 12) {
-                        ProgressView()
+                    VStack(alignment: .leading, spacing: 6) {
+                        ProgressView(value: service.fractionComplete)
+                            .tint(.indigo)
+                            .animation(.easeInOut(duration: 0.3), value: service.fractionComplete)
+
                         Text(service.progress)
-                            .font(.subheadline)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
@@ -68,6 +76,10 @@ struct TranscriptionView: View {
                             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .padding(.horizontal)
+
+                    // Summary section.
+                    summarySection
+
                 } else if !service.isTranscribing && service.errorMessage == nil {
                     ContentUnavailableView(
                         "No Transcription Yet",
@@ -102,5 +114,88 @@ struct TranscriptionView: View {
                 .disabled(episode.audioURL == nil)
             }
         }
+    }
+
+    // MARK: - Summary Section
+
+    @ViewBuilder
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("AI Summary", systemImage: "sparkles")
+                    .font(.headline)
+                    .foregroundStyle(.indigo)
+
+                Spacer()
+
+                if summaryText.isEmpty && !isSummarizing {
+                    Button {
+                        Task { await generateSummary() }
+                    } label: {
+                        Label("Summarize", systemImage: "sparkles")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.indigo)
+                    .buttonBorderShape(.capsule)
+                }
+            }
+
+            if isSummarizing {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Generating summary…")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let error = summaryError {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.caption)
+            }
+
+            if !summaryText.isEmpty {
+                Text(summaryText)
+                    .font(.body)
+                    .textSelection(.enabled)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        .indigo.opacity(0.08),
+                        in: RoundedRectangle(cornerRadius: 14)
+                    )
+
+                // Copy summary.
+                Button {
+                    UIPasteboard.general.string = summaryText
+                } label: {
+                    Label("Copy Summary", systemImage: "doc.on.doc")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    // MARK: - Generate Summary
+
+    private func generateSummary() async {
+        guard !service.transcriptionText.isEmpty else { return }
+
+        isSummarizing = true
+        summaryError = nil
+
+        do {
+            summaryText = try await GeminiService.summarize(
+                transcript: service.transcriptionText)
+        } catch {
+            summaryError = error.localizedDescription
+        }
+
+        isSummarizing = false
     }
 }

@@ -8,6 +8,7 @@ final class TranscriptionService {
     var transcriptionText: String = ""
     var isTranscribing: Bool = false
     var progress: String = "Preparing…"
+    var fractionComplete: Double = 0
     var errorMessage: String?
 
     /// Transcribe the audio at the given URL.
@@ -16,6 +17,7 @@ final class TranscriptionService {
         isTranscribing = true
         transcriptionText = ""
         errorMessage = nil
+        fractionComplete = 0
         progress = "Downloading audio…"
 
         do {
@@ -51,28 +53,38 @@ final class TranscriptionService {
                 try await installationRequest.downloadAndInstall()
             }
 
-            // 4. Open the audio file.
+            // 4. Open the audio file and compute duration.
             let audioFile = try AVAudioFile(forReading: tempURL)
+            let totalDuration = Double(audioFile.length) / audioFile.fileFormat.sampleRate
 
             progress = "Transcribing…"
 
-            // 5. Create analyzer and start analysis.
+            // 5. Create analyzer with progress tracking.
             let analyzer = try await SpeechAnalyzer(
                 inputAudioFile: audioFile,
                 modules: [transcriber],
-                finishAfterFile: true
+                finishAfterFile: true,
+                volatileRangeChangedHandler: { [weak self] range, _, _ in
+                    guard let self, totalDuration > 0 else { return }
+                    let processedSeconds = CMTimeGetSeconds(range.end)
+                    Task { @MainActor in
+                        self.fractionComplete = min(processedSeconds / totalDuration, 1.0)
+                    }
+                }
             )
 
             // 6. Collect results as they stream in.
             for try await result in transcriber.results {
                 let text = String(result.text.characters)
                 transcriptionText += text + " "
-                progress = "Transcribing… (\(transcriptionText.count) characters)"
+                let pct = Int(fractionComplete * 100)
+                progress = "Transcribing… \(pct)%"
             }
 
             // 7. Finalize.
             try await analyzer.finalizeAndFinishThroughEndOfInput()
 
+            fractionComplete = 1.0
             progress = "Done"
             isTranscribing = false
 
