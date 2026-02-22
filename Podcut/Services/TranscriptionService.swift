@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import Speech
+import UIKit
 
 /// Transcribes a podcast episode's audio using the iOS 26 SpeechTranscriber.
 @Observable
@@ -19,6 +20,21 @@ final class TranscriptionService {
         errorMessage = nil
         fractionComplete = 0
         progress = "Downloading audio…"
+
+        // Request background execution time so transcription continues
+        // if the user switches away from the app.
+        var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "Transcription") {
+            // System is about to kill the background time — clean up.
+            UIApplication.shared.endBackgroundTask(backgroundTaskID)
+            backgroundTaskID = .invalid
+        }
+
+        defer {
+            if backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+            }
+        }
 
         do {
             // 1. Download the audio to a temporary file.

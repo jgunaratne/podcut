@@ -7,7 +7,6 @@ struct SearchView: View {
     @State private var results: [Podcast] = []
     @State private var isSearching = false
     @State private var errorMessage: String?
-    @State private var searchTask: Task<Void, Never>?
 
     private let service = PodcastSearchService()
 
@@ -43,21 +42,18 @@ struct SearchView: View {
                 prompt: "Podcast name or topic"
             )
             .onSubmit(of: .search) {
-                triggerSearch()
+                Task { await performSearch() }
             }
-            .onChange(of: query) {
+            .task(id: query) {
+                // Debounced auto-search.
                 if query.isEmpty {
                     results = []
                     errorMessage = nil
-                } else {
-                    // Debounced auto-search.
-                    searchTask?.cancel()
-                    searchTask = Task {
-                        try? await Task.sleep(for: .milliseconds(400))
-                        guard !Task.isCancelled else { return }
-                        await performSearch()
-                    }
+                    return
                 }
+                try? await Task.sleep(for: .milliseconds(400))
+                guard !Task.isCancelled else { return }
+                await performSearch()
             }
             .navigationDestination(for: Podcast.self) { podcast in
                 PodcastDetailView(podcast: podcast)
@@ -71,10 +67,7 @@ struct SearchView: View {
         }
     }
 
-    private func triggerSearch() {
-        searchTask?.cancel()
-        searchTask = Task { await performSearch() }
-    }
+
 
     private func performSearch() async {
         isSearching = true

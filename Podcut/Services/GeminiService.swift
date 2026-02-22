@@ -1,9 +1,9 @@
 import FirebaseAI
 import Foundation
 
-/// Calls Gemini 2.5 Flash via Firebase AI to summarize text.
+/// Calls Gemini 2.5 Flash Lite via Firebase AI to summarize text.
 struct GeminiService {
-    /// Summarize the given podcast transcript using Gemini 2.5 Flash via Firebase AI.
+    /// Summarize the given podcast transcript using Gemini 2.5 Flash Lite via Firebase AI.
     static func summarize(transcript: String) async throws -> String {
         let model = FirebaseAI.firebaseAI(backend: .googleAI())
             .generativeModel(modelName: "gemini-2.5-flash-lite")
@@ -17,23 +17,31 @@ struct GeminiService {
             \(transcript)
             """
 
-        let response = try await model.generateContent(prompt)
+        do {
+            let response = try await model.generateContent(prompt)
 
-        guard let text = response.text else {
-            throw GeminiError.emptyResponse
+            guard let text = response.text else {
+                throw GeminiError.emptyResponse
+            }
+
+            return text
+        } catch let error as GenerateContentError {
+            // Surface the detailed Firebase AI error.
+            throw GeminiError.firebaseAI(detail: String(describing: error))
         }
-
-        return text
     }
 }
 
 enum GeminiError: LocalizedError {
     case emptyResponse
+    case firebaseAI(detail: String)
 
     var errorDescription: String? {
         switch self {
         case .emptyResponse:
             return "Gemini returned an empty response."
+        case .firebaseAI(let detail):
+            return "Gemini error: \(detail)"
         }
     }
 }
