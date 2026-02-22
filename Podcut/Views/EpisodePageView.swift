@@ -41,6 +41,31 @@ struct EpisodePageView: View {
         .onAppear { loadSaved() }
     }
 
+    // MARK: - HTML Description Rendering
+
+    /// Renders the episode description, detecting HTML and converting it to styled text.
+    @ViewBuilder
+    private var renderedDescription: some View {
+        if episode.description.contains("<") && episode.description.contains(">"),
+           let data = episode.description.data(using: .utf8),
+           let nsAttr = try? NSAttributedString(
+               data: data,
+               options: [
+                   .documentType: NSAttributedString.DocumentType.html,
+                   .characterEncoding: String.Encoding.utf8.rawValue,
+               ],
+               documentAttributes: nil
+           ),
+           let attributed = try? AttributedString(nsAttr)
+        {
+            Text(attributed)
+                .font(.body)
+        } else {
+            Text(episode.description)
+                .font(.body)
+        }
+    }
+
     // MARK: - Page 1: Detail
 
     private var episodeDetailPage: some View {
@@ -94,8 +119,7 @@ struct EpisodePageView: View {
                         Label("Description", systemImage: "doc.text")
                             .font(.headline)
 
-                        Text(episode.description)
-                            .font(.body)
+                        renderedDescription
                             .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
@@ -303,30 +327,34 @@ struct EpisodePageView: View {
     // MARK: - Page Indicator
 
     private var pageIndicator: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 0) {
             pageTab(title: "Details", icon: "info.circle", index: 0)
             pageTab(title: "Transcript", icon: "text.quote", index: 1)
             pageTab(title: "Summary", icon: "sparkles", index: 2)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 24)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
         .background(.bar)
     }
 
     private func pageTab(title: String, icon: String, index: Int) -> some View {
-        Button {
-            withAnimation { currentPage = index }
+        let isSelected = currentPage == index
+        return Button {
+            withAnimation(.easeInOut(duration: 0.25)) { currentPage = index }
         } label: {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.body)
+            VStack(spacing: 3) {
+                Image(systemName: isSelected ? icon + ".fill" : icon)
+                    .font(.body.weight(isSelected ? .semibold : .regular))
+                    .contentTransition(.symbolEffect(.replace))
                 Text(title)
-                    .font(.caption2)
+                    .font(.caption2.weight(isSelected ? .medium : .regular))
             }
             .frame(maxWidth: .infinity)
-            .foregroundStyle(currentPage == index ? .indigo : .secondary)
+            .padding(.vertical, 6)
+            .foregroundStyle(isSelected ? .indigo : .secondary)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 
     // MARK: - Generate Summary

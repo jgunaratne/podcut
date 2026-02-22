@@ -22,6 +22,7 @@ struct EpisodeRowView: View {
                     ? AnyShapeStyle(.tint)
                     : AnyShapeStyle(.secondary)
             )
+            .contentTransition(.symbolEffect(.replace))
             .symbolEffect(.pulse, isActive: isCurrentlyPlaying && player.isPlaying)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -29,7 +30,7 @@ struct EpisodeRowView: View {
                     .font(.subheadline.weight(.medium))
                     .lineLimit(2)
 
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     if !episode.pubDate.isEmpty {
                         Text(episode.pubDate)
                     }
@@ -42,9 +43,9 @@ struct EpisodeRowView: View {
                 .foregroundStyle(.secondary)
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
-            // Transcribe button.
+            // Episode page button.
             if episode.audioURL != nil {
                 NavigationLink {
                     EpisodePageView(episode: episode)

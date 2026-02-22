@@ -7,9 +7,9 @@ struct MiniPlayerView: View {
 
     var body: some View {
         if let episode = player.currentEpisode {
-            HStack(spacing: 12) {
-                // Episode title — tap to expand.
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 14) {
+                // Episode info — tap to expand.
+                VStack(alignment: .leading, spacing: 4) {
                     Text(episode.title)
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
@@ -18,14 +18,12 @@ struct MiniPlayerView: View {
                     GeometryReader { geo in
                         Capsule()
                             .fill(.quaternary)
-                            .frame(height: 3)
                             .overlay(alignment: .leading) {
                                 Capsule()
                                     .fill(.tint)
                                     .frame(
-                                        width: geo.size.width
-                                            * player.playbackProgress,
-                                        height: 3)
+                                        width: max(
+                                            geo.size.width * player.playbackProgress, 0))
                             }
                     }
                     .frame(height: 3)
@@ -35,27 +33,34 @@ struct MiniPlayerView: View {
                     showNowPlaying = true
                 }
 
-                // Controls.
-                Button {
-                    player.togglePlayPause()
-                } label: {
-                    Image(
-                        systemName: player.isPlaying
-                            ? "pause.fill" : "play.fill"
-                    )
-                    .font(.title3)
-                    .frame(width: 36, height: 36)
-                }
+                Spacer(minLength: 0)
 
-                Button {
-                    player.skipForward()
-                } label: {
-                    Image(systemName: "forward.30")
-                        .font(.subheadline)
-                        .frame(width: 28, height: 28)
+                // Controls — pinned to the right.
+                HStack(spacing: 8) {
+                    Button {
+                        player.togglePlayPause()
+                    } label: {
+                        Image(
+                            systemName: player.isPlaying
+                                ? "pause.fill" : "play.fill"
+                        )
+                        .font(.title3)
+                        .contentTransition(.symbolEffect(.replace))
+                    }
+                    .frame(width: 40, height: 40)
+
+                    Button {
+                        player.skipForward()
+                    } label: {
+                        Image(systemName: "forward.30")
+                            .font(.subheadline)
+                    }
+                    .frame(width: 32, height: 32)
                 }
+                .foregroundStyle(.primary)
             }
-            .padding(.horizontal, 16)
+            .padding(.leading, 16)
+            .padding(.trailing, 10)
             .padding(.vertical, 10)
             .glassEffect(.regular.interactive(), in: .capsule)
             .padding(.horizontal, 12)

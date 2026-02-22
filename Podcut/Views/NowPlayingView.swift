@@ -8,17 +8,18 @@ struct NowPlayingView: View {
     @State private var dragProgress: Double?
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             // Drag handle.
             Capsule()
                 .fill(.tertiary)
-                .frame(width: 40, height: 5)
-                .padding(.top, 12)
+                .frame(width: 36, height: 5)
+                .padding(.top, 10)
+                .padding(.bottom, 24)
 
             Spacer()
 
             // Artwork placeholder.
-            RoundedRectangle(cornerRadius: 28)
+            RoundedRectangle(cornerRadius: 24)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -32,13 +33,16 @@ struct NowPlayingView: View {
                 .frame(width: 280, height: 280)
                 .overlay {
                     Image(systemName: "waveform")
-                        .font(.system(size: 60, weight: .thin))
+                        .font(.system(size: 56, weight: .thin))
                         .foregroundStyle(.white.opacity(0.7))
                         .symbolEffect(
                             .variableColor.iterative,
                             isActive: player.isPlaying)
                 }
-                .shadow(color: .purple.opacity(0.3), radius: 30, y: 15)
+                .shadow(color: .purple.opacity(0.25), radius: 24, y: 12)
+
+            Spacer()
+                .frame(height: 36)
 
             // Episode info.
             VStack(spacing: 6) {
@@ -51,10 +55,13 @@ struct NowPlayingView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 32)
+
+            Spacer()
+                .frame(height: 32)
 
             // Scrubber.
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 Slider(
                     value: Binding(
                         get: { dragProgress ?? player.playbackProgress },
@@ -75,15 +82,21 @@ struct NowPlayingView: View {
                 HStack {
                     Text(player.formattedTime(player.currentTime))
                     Spacer()
-                    Text(player.formattedTime(player.duration))
+                    Text(
+                        "-"
+                            + player.formattedTime(
+                                max(player.duration - player.currentTime, 0)))
                 }
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 32)
 
+            Spacer()
+                .frame(height: 28)
+
             // Playback controls.
-            HStack(spacing: 40) {
+            HStack(spacing: 44) {
                 Button { player.skipBackward() } label: {
                     Image(systemName: "gobackward.15")
                         .font(.title2)
@@ -94,8 +107,8 @@ struct NowPlayingView: View {
                         systemName: player.isPlaying
                             ? "pause.circle.fill" : "play.circle.fill"
                     )
-                    .font(.system(size: 64))
-                    .symbolEffect(.bounce, value: player.isPlaying)
+                    .font(.system(size: 60))
+                    .contentTransition(.symbolEffect(.replace))
                 }
 
                 Button { player.skipForward() } label: {
@@ -115,8 +128,8 @@ struct NowPlayingView: View {
             LinearGradient(
                 colors: [
                     Color(.systemBackground),
-                    Color.purple.opacity(0.08),
-                    Color.blue.opacity(0.06),
+                    Color.purple.opacity(0.06),
+                    Color.blue.opacity(0.04),
                 ],
                 startPoint: .top,
                 endPoint: .bottom
