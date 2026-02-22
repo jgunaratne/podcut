@@ -1,4 +1,5 @@
 import FirebaseCore
+import SwiftData
 import SwiftUI
 
 @main
@@ -17,5 +18,6 @@ struct PodcutApp: App {
                 .environment(audioPlayer)
                 .tint(.purple)
         }
+        .modelContainer(for: TranscriptionRecord.self)
     }
 }

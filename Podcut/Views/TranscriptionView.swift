@@ -1,14 +1,17 @@
+import SwiftData
 import SwiftUI
 
 /// Displays the transcription of a podcast episode.
 struct TranscriptionView: View {
     let episode: Episode
     @State private var service = TranscriptionService()
+    @Environment(\.modelContext) private var modelContext
 
     // Summary state.
     @State private var summaryText: String = ""
     @State private var isSummarizing = false
     @State private var summaryError: String?
+    @State private var isSaved = false
 
     var body: some View {
         ScrollView {
@@ -22,6 +25,12 @@ struct TranscriptionView: View {
                         Text(episode.pubDate)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                    }
+
+                    if isSaved {
+                        Label("Saved on device", systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
                     }
                 }
                 .padding(.horizontal)
@@ -100,6 +109,7 @@ struct TranscriptionView: View {
                     Task {
                         guard let url = episode.audioURL else { return }
                         await service.transcribe(audioURL: url)
+                        saveToDevice()
                     }
                 } label: {
                     Label("Start Transcription", systemImage: "waveform.badge.mic")
@@ -114,6 +124,7 @@ struct TranscriptionView: View {
                 .disabled(episode.audioURL == nil)
             }
         }
+        .onAppear { loadSaved() }
     }
 
     // MARK: - Summary Section
@@ -197,5 +208,30 @@ struct TranscriptionView: View {
         }
 
         isSummarizing = false
+        saveToDevice()
+    }
+
+    // MARK: - Persistence
+
+    private func loadSaved() {
+        guard let url = episode.audioURL,
+              let record = TranscriptionStore.load(audioURL: url, context: modelContext)
+        else { return }
+        service.transcriptionText = record.transcription
+        summaryText = record.summary ?? ""
+        isSaved = true
+    }
+
+    private func saveToDevice() {
+        guard let url = episode.audioURL,
+              !service.transcriptionText.isEmpty
+        else { return }
+        TranscriptionStore.save(
+            audioURL: url,
+            transcription: service.transcriptionText,
+            summary: summaryText.isEmpty ? nil : summaryText,
+            context: modelContext
+        )
+        isSaved = true
     }
 }
