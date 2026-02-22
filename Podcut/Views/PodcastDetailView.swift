@@ -156,7 +156,12 @@ struct PodcastDetailView: View {
 
         do {
             let parser = RSSFeedParser()
-            episodes = try await parser.parse(feedURL: feedURL)
+            var parsed = try await parser.parse(feedURL: feedURL)
+            let artworkURL = URL(string: podcast.artworkUrl600)
+            for i in parsed.indices {
+                parsed[i].artworkURL = artworkURL
+            }
+            episodes = parsed
             isLoading = false
         } catch {
             isLoading = false

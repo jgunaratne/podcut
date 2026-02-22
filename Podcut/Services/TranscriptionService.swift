@@ -3,22 +3,42 @@ import Foundation
 import Speech
 import UIKit
 
+/// A single timestamped segment of a transcription.
+struct TranscriptionSegment: Codable, Identifiable, Hashable {
+    var id: Double { timestamp }
+    let timestamp: TimeInterval  // seconds from start
+    let text: String
+
+    /// Format the timestamp as MM:SS.
+    var formattedTime: String {
+        let minutes = Int(timestamp) / 60
+        let seconds = Int(timestamp) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
 /// Transcribes a podcast episode's audio using the iOS 26 SpeechTranscriber.
 @Observable
 final class TranscriptionService {
     var transcriptionText: String = ""
+    var segments: [TranscriptionSegment] = []
     var isTranscribing: Bool = false
     var progress: String = "Preparing…"
     var fractionComplete: Double = 0
     var errorMessage: String?
+
+    /// The current processing time in seconds (updated by the analyzer).
+    private var currentProcessedTime: Double = 0
 
     /// Transcribe the audio at the given URL.
     /// Downloads the audio to a temp file, then runs SpeechAnalyzer with SpeechTranscriber.
     func transcribe(audioURL: URL) async {
         isTranscribing = true
         transcriptionText = ""
+        segments = []
         errorMessage = nil
         fractionComplete = 0
+        currentProcessedTime = 0
         progress = "Downloading audio…"
 
         // Request background execution time so transcription continues
@@ -86,13 +106,19 @@ final class TranscriptionService {
                     let processedSeconds = CMTimeGetSeconds(range.end)
                     Task { @MainActor in
                         self.fractionComplete = min(processedSeconds / totalDuration, 1.0)
+                        self.currentProcessedTime = processedSeconds
                     }
                 }
             )
 
-            // 6. Collect results as they stream in.
+            // 6. Collect results as they stream in, capturing timestamps.
             for try await result in transcriber.results {
                 let text = String(result.text.characters)
+                let segment = TranscriptionSegment(
+                    timestamp: currentProcessedTime,
+                    text: text
+                )
+                segments.append(segment)
                 transcriptionText += text + " "
                 let pct = Int(fractionComplete * 100)
                 progress = "Transcribing… \(pct)%"

@@ -9,12 +9,21 @@ final class TranscriptionRecord {
     var transcription: String
     var summary: String?
     var savedAt: Date
+    /// JSON-encoded array of TranscriptionSegment for timestamped text.
+    var segmentsJSON: Data?
 
-    init(audioURLString: String, transcription: String, summary: String? = nil) {
+    init(audioURLString: String, transcription: String, summary: String? = nil, segmentsJSON: Data? = nil) {
         self.audioURLString = audioURLString
         self.transcription = transcription
         self.summary = summary
+        self.segmentsJSON = segmentsJSON
         self.savedAt = Date()
+    }
+
+    /// Decode stored segments.
+    var segments: [TranscriptionSegment] {
+        guard let data = segmentsJSON else { return [] }
+        return (try? JSONDecoder().decode([TranscriptionSegment].self, from: data)) ?? []
     }
 }
 
@@ -26,6 +35,7 @@ struct TranscriptionStore {
         audioURL: URL,
         transcription: String,
         summary: String? = nil,
+        segments: [TranscriptionSegment] = [],
         context: ModelContext
     ) {
         let key = audioURL.absoluteString
@@ -33,17 +43,21 @@ struct TranscriptionStore {
             predicate: #Predicate { $0.audioURLString == key }
         )
 
+        let segmentsData = segments.isEmpty ? nil : try? JSONEncoder().encode(segments)
+
         if let existing = try? context.fetch(descriptor).first {
             // Update existing record.
             existing.transcription = transcription
             existing.summary = summary ?? existing.summary
+            existing.segmentsJSON = segmentsData ?? existing.segmentsJSON
             existing.savedAt = Date()
         } else {
             // Insert new record.
             let record = TranscriptionRecord(
                 audioURLString: key,
                 transcription: transcription,
-                summary: summary
+                summary: summary,
+                segmentsJSON: segmentsData
             )
             context.insert(record)
         }

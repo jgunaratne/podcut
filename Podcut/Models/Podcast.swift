@@ -6,6 +6,7 @@ struct Podcast: Codable, Identifiable, Hashable {
     let collectionName: String
     let artistName: String
     let artworkUrl600: String
+    let artworkUrl100: String
     let feedUrl: String?
     let trackCount: Int?
     let primaryGenreName: String?
@@ -16,6 +17,7 @@ struct Podcast: Codable, Identifiable, Hashable {
         case collectionName
         case artistName
         case artworkUrl600
+        case artworkUrl100
         case feedUrl
         case trackCount
         case primaryGenreName

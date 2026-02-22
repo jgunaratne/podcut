@@ -18,9 +18,15 @@ struct NowPlayingView: View {
 
             Spacer()
 
-            // Artwork placeholder.
-            RoundedRectangle(cornerRadius: 24)
-                .fill(
+            // Artwork.
+            AsyncImage(url: player.currentEpisode?.artworkURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                default:
+                    // Fallback gradient if no artwork.
                     LinearGradient(
                         colors: [
                             .purple.opacity(0.5),
@@ -29,17 +35,19 @@ struct NowPlayingView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                )
-                .frame(width: 280, height: 280)
-                .overlay {
-                    Image(systemName: "waveform")
-                        .font(.system(size: 56, weight: .thin))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .symbolEffect(
-                            .variableColor.iterative,
-                            isActive: player.isPlaying)
+                    .overlay {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 56, weight: .thin))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .symbolEffect(
+                                .variableColor.iterative,
+                                isActive: player.isPlaying)
+                    }
                 }
-                .shadow(color: .purple.opacity(0.25), radius: 24, y: 12)
+            }
+            .frame(width: 280, height: 280)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
 
             Spacer()
                 .frame(height: 36)

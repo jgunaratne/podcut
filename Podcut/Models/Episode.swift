@@ -8,4 +8,5 @@ struct Episode: Identifiable, Hashable {
     let audioURL: URL?
     let pubDate: String
     let duration: String
+    var artworkURL: URL?
 }

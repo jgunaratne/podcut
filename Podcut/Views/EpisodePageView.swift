@@ -163,8 +163,8 @@ struct EpisodePageView: View {
                         .padding(.horizontal)
                 }
 
-                // Transcription text.
-                if !service.transcriptionText.isEmpty {
+                // Transcription with timecodes.
+                if !service.segments.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Label("Transcription", systemImage: "text.quote")
@@ -181,6 +181,44 @@ struct EpisodePageView: View {
                             .buttonStyle(.bordered)
                             .buttonBorderShape(.capsule)
                         }
+
+                        // Timestamped segments.
+                        VStack(spacing: 0) {
+                            ForEach(service.segments) { segment in
+                                HStack(alignment: .top, spacing: 12) {
+                                    // Tappable timecode.
+                                    Button {
+                                        seekAndPlay(seconds: segment.timestamp)
+                                    } label: {
+                                        Text(segment.formattedTime)
+                                            .font(.caption.monospacedDigit())
+                                            .foregroundStyle(.indigo)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .frame(width: 44, alignment: .trailing)
+
+                                    Text(segment.text)
+                                        .font(.body)
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+
+                                if segment.id != service.segments.last?.id {
+                                    Divider().padding(.leading, 56)
+                                }
+                            }
+                        }
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .padding(.horizontal)
+
+                } else if !service.transcriptionText.isEmpty {
+                    // Fallback for legacy data without segments.
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("Transcription", systemImage: "text.quote")
+                            .font(.headline)
 
                         Text(service.transcriptionText)
                             .font(.body)
@@ -267,21 +305,14 @@ struct EpisodePageView: View {
                             .buttonBorderShape(.capsule)
                         }
 
-                        Group {
-                            if let attributed = try? AttributedString(markdown: summaryText, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
-                                Text(attributed)
-                            } else {
-                                Text(summaryText)
-                            }
-                        }
-                        .font(.body)
-                        .textSelection(.enabled)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            .indigo.opacity(0.08),
-                            in: RoundedRectangle(cornerRadius: 14)
-                        )
+                        // Render summary with tappable timecodes.
+                        summaryWithTimecodes
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                .indigo.opacity(0.08),
+                                in: RoundedRectangle(cornerRadius: 14)
+                            )
                     }
                     .padding(.horizontal)
 
@@ -366,14 +397,153 @@ struct EpisodePageView: View {
         summaryError = nil
 
         do {
-            summaryText = try await GeminiService.summarize(
-                transcript: service.transcriptionText)
+            if !service.segments.isEmpty {
+                summaryText = try await GeminiService.summarize(
+                    segments: service.segments)
+            } else {
+                summaryText = try await GeminiService.summarize(
+                    transcript: service.transcriptionText)
+            }
         } catch {
             summaryError = error.localizedDescription
         }
 
         isSummarizing = false
         saveToDevice()
+    }
+
+    // MARK: - Tappable Summary with Timecodes
+
+    /// Renders the summary markdown with [MM:SS] timecodes as tappable buttons.
+    @ViewBuilder
+    private var summaryWithTimecodes: some View {
+        let lines = summaryText.components(separatedBy: "\n")
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Spacer().frame(height: 4)
+                } else {
+                    summaryLine(line)
+                }
+            }
+        }
+        .font(.body)
+    }
+
+    /// Renders a single summary line, replacing [MM:SS] patterns with tappable buttons.
+    @ViewBuilder
+    private func summaryLine(_ line: String) -> some View {
+        let parts = parseTimecodes(in: line)
+        let flow = parts.reduce(Text("")) { result, part in
+            switch part {
+            case .text(let str):
+                // Render as markdown inline.
+                if let attr = try? AttributedString(
+                    markdown: str,
+                    options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                ) {
+                    return result + Text(attr)
+                } else {
+                    return result + Text(str)
+                }
+            case .timecode(let display, _):
+                return result + Text(display).foregroundColor(.indigo).underline()
+            }
+        }
+
+        // Check if the line has any timecodes to make tappable.
+        let timecodes = parts.compactMap { part -> (String, TimeInterval)? in
+            if case .timecode(let display, let seconds) = part {
+                return (display, seconds)
+            }
+            return nil
+        }
+
+        if let first = timecodes.first {
+            // Make the whole line tappable to the first timecode.
+            HStack(alignment: .top, spacing: 0) {
+                Button {
+                    seekAndPlay(seconds: first.1)
+                } label: {
+                    flow.multilineTextAlignment(.leading)
+                }
+                .buttonStyle(.plain)
+            }
+        } else {
+            flow.textSelection(.enabled)
+        }
+    }
+
+    // MARK: - Timecode Parsing
+
+    private enum SummaryPart {
+        case text(String)
+        case timecode(display: String, seconds: TimeInterval)
+    }
+
+    /// Parse [MM:SS] or [H:MM:SS] patterns from a string.
+    private func parseTimecodes(in text: String) -> [SummaryPart] {
+        var parts: [SummaryPart] = []
+        let pattern = #"\[(\d{1,2}:\d{2}(?::\d{2})?)\]"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return [.text(text)]
+        }
+
+        let nsText = text as NSString
+        var lastEnd = 0
+
+        let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsText.length))
+        for match in matches {
+            let matchRange = match.range
+            if matchRange.location > lastEnd {
+                let prefix = nsText.substring(with: NSRange(location: lastEnd, length: matchRange.location - lastEnd))
+                parts.append(.text(prefix))
+            }
+
+            let timeString = nsText.substring(with: match.range(at: 1))
+            let display = nsText.substring(with: matchRange)
+            let seconds = parseTimeToSeconds(timeString)
+            parts.append(.timecode(display: display, seconds: seconds))
+
+            lastEnd = matchRange.location + matchRange.length
+        }
+
+        if lastEnd < nsText.length {
+            parts.append(.text(nsText.substring(from: lastEnd)))
+        }
+
+        return parts.isEmpty ? [.text(text)] : parts
+    }
+
+    /// Convert "MM:SS" or "H:MM:SS" to seconds.
+    private func parseTimeToSeconds(_ time: String) -> TimeInterval {
+        let components = time.split(separator: ":").compactMap { Int($0) }
+        switch components.count {
+        case 2:
+            return TimeInterval(components[0] * 60 + components[1])
+        case 3:
+            return TimeInterval(components[0] * 3600 + components[1] * 60 + components[2])
+        default:
+            return 0
+        }
+    }
+
+    // MARK: - Audio Seek
+
+    private func seekAndPlay(seconds: TimeInterval) {
+        guard player.duration > 0 else {
+            // If not playing, start the episode first.
+            if let url = episode.audioURL {
+                player.play(episode: episode)
+                // Delay the seek slightly to allow the player to load.
+                Task {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    player.seek(to: seconds / max(player.duration, 1))
+                }
+            }
+            return
+        }
+        player.seek(to: seconds / player.duration)
     }
 
     // MARK: - Persistence
@@ -383,6 +553,7 @@ struct EpisodePageView: View {
               let record = TranscriptionStore.load(audioURL: url, context: modelContext)
         else { return }
         service.transcriptionText = record.transcription
+        service.segments = record.segments
         summaryText = record.summary ?? ""
         isSaved = true
     }
@@ -395,6 +566,7 @@ struct EpisodePageView: View {
             audioURL: url,
             transcription: service.transcriptionText,
             summary: summaryText.isEmpty ? nil : summaryText,
+            segments: service.segments,
             context: modelContext
         )
         isSaved = true

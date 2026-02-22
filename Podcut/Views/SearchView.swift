@@ -4,6 +4,7 @@ import SwiftUI
 struct SearchView: View {
     @Environment(FavoritesStore.self) private var favorites
     @State private var query = ""
+    @State private var debouncedQuery = ""
     @State private var results: [Podcast] = []
     @State private var isSearching = false
     @State private var errorMessage: String?
@@ -42,18 +43,24 @@ struct SearchView: View {
                 prompt: "Podcast name or topic"
             )
             .onSubmit(of: .search) {
-                Task { await performSearch() }
+                debouncedQuery = query
             }
             .task(id: query) {
-                // Debounced auto-search.
+                // Debounce: wait before updating debouncedQuery.
                 if query.isEmpty {
+                    debouncedQuery = ""
                     results = []
                     errorMessage = nil
                     return
                 }
-                try? await Task.sleep(for: .milliseconds(400))
+                try? await Task.sleep(for: .milliseconds(500))
                 guard !Task.isCancelled else { return }
-                await performSearch()
+                debouncedQuery = query
+            }
+            .task(id: debouncedQuery) {
+                // Only perform network call when debounced query changes.
+                guard !debouncedQuery.isEmpty else { return }
+                await performSearch(debouncedQuery)
             }
             .navigationDestination(for: Podcast.self) { podcast in
                 PodcastDetailView(podcast: podcast)
@@ -67,14 +74,12 @@ struct SearchView: View {
         }
     }
 
-
-
-    private func performSearch() async {
+    private func performSearch(_ searchQuery: String) async {
         isSearching = true
         errorMessage = nil
         defer { isSearching = false }
         do {
-            results = try await service.search(query: query)
+            results = try await service.search(query: searchQuery)
         } catch {
             if !Task.isCancelled {
                 results = []
@@ -90,7 +95,8 @@ struct PodcastRowView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
+            // Use smaller artwork (100px) for list rows instead of 600px.
+            AsyncImage(url: URL(string: podcast.artworkUrl100)) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -105,7 +111,7 @@ struct PodcastRowView: View {
                         }
                 }
             }
-            .frame(width: 64, height: 64)
+            .frame(width: 56, height: 56)
             .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 4) {

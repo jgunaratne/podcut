@@ -7,8 +7,28 @@ struct MiniPlayerView: View {
 
     var body: some View {
         if let episode = player.currentEpisode {
-            HStack(spacing: 14) {
-                // Episode info — tap to expand.
+            HStack(spacing: 12) {
+                // Episode artwork thumbnail.
+                AsyncImage(url: episode.artworkURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    default:
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(.quaternary)
+                            .overlay {
+                                Image(systemName: "waveform")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                    }
+                }
+                .frame(width: 38, height: 38)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // Episode title — tap to expand.
                 VStack(alignment: .leading, spacing: 4) {
                     Text(episode.title)
                         .font(.subheadline.weight(.semibold))
@@ -59,9 +79,9 @@ struct MiniPlayerView: View {
                 }
                 .foregroundStyle(.primary)
             }
-            .padding(.leading, 16)
+            .padding(.leading, 10)
             .padding(.trailing, 10)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .glassEffect(.regular.interactive(), in: .capsule)
             .padding(.horizontal, 12)
             .transition(.move(edge: .bottom).combined(with: .opacity))
