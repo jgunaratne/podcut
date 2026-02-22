@@ -1,0 +1,127 @@
+import SwiftUI
+
+/// Full-screen now-playing view with Liquid Glass controls.
+struct NowPlayingView: View {
+    @Environment(AudioPlayerManager.self) private var player
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var dragProgress: Double?
+
+    var body: some View {
+        VStack(spacing: 32) {
+            // Drag handle.
+            Capsule()
+                .fill(.tertiary)
+                .frame(width: 40, height: 5)
+                .padding(.top, 12)
+
+            Spacer()
+
+            // Artwork placeholder.
+            RoundedRectangle(cornerRadius: 28)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            .purple.opacity(0.5),
+                            .blue.opacity(0.4),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 280, height: 280)
+                .overlay {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 60, weight: .thin))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .symbolEffect(
+                            .variableColor.iterative,
+                            isActive: player.isPlaying)
+                }
+                .shadow(color: .purple.opacity(0.3), radius: 30, y: 15)
+
+            // Episode info.
+            VStack(spacing: 6) {
+                Text(player.currentEpisode?.title ?? "Not Playing")
+                    .font(.title3.bold())
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+
+                Text(player.currentEpisode?.pubDate ?? "")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 24)
+
+            // Scrubber.
+            VStack(spacing: 6) {
+                Slider(
+                    value: Binding(
+                        get: { dragProgress ?? player.playbackProgress },
+                        set: { newValue in
+                            dragProgress = newValue
+                        }
+                    ),
+                    in: 0...1,
+                    onEditingChanged: { editing in
+                        if !editing, let progress = dragProgress {
+                            player.seek(to: progress)
+                            dragProgress = nil
+                        }
+                    }
+                )
+                .tint(.primary)
+
+                HStack {
+                    Text(player.formattedTime(player.currentTime))
+                    Spacer()
+                    Text(player.formattedTime(player.duration))
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 32)
+
+            // Playback controls.
+            HStack(spacing: 40) {
+                Button { player.skipBackward() } label: {
+                    Image(systemName: "gobackward.15")
+                        .font(.title2)
+                }
+
+                Button { player.togglePlayPause() } label: {
+                    Image(
+                        systemName: player.isPlaying
+                            ? "pause.circle.fill" : "play.circle.fill"
+                    )
+                    .font(.system(size: 64))
+                    .symbolEffect(.bounce, value: player.isPlaying)
+                }
+
+                Button { player.skipForward() } label: {
+                    Image(systemName: "goforward.30")
+                        .font(.title2)
+                }
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 16)
+            .glassEffect(.regular, in: .capsule)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(.systemBackground),
+                    Color.purple.opacity(0.08),
+                    Color.blue.opacity(0.06),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        )
+    }
+}
