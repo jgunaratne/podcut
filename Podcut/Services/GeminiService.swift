@@ -73,6 +73,44 @@ struct GeminiService {
             throw GeminiError.firebaseAI(detail: String(describing: error))
         }
     }
+
+    /// Chat with Gemini about a podcast transcript (RAG-style).
+    /// Sends the transcript as context along with the user question and chat history.
+    static func chat(
+        transcript: String,
+        history: [(role: String, text: String)],
+        question: String
+    ) async throws -> String {
+        let model = FirebaseAI.firebaseAI(backend: .googleAI())
+            .generativeModel(modelName: "gemini-2.5-flash-lite")
+
+        // Build conversation history as text.
+        let historyText = history.map { "\($0.role): \($0.text)" }
+            .joined(separator: "\n")
+
+        let prompt = """
+            You are a helpful podcast assistant. Answer the user's question based ONLY on \
+            the podcast transcript provided below. If the answer isn't in the transcript, \
+            say so. Be concise and reference specific parts of the transcript when relevant. \
+            Use timecodes from the transcript in your answer when applicable.
+
+            PODCAST TRANSCRIPT:
+            \(transcript)
+
+            \(historyText.isEmpty ? "" : "CONVERSATION HISTORY:\n\(historyText)\n")
+            USER QUESTION: \(question)
+            """
+
+        do {
+            let response = try await model.generateContent(prompt)
+            guard let text = response.text else {
+                throw GeminiError.emptyResponse
+            }
+            return text
+        } catch let error as GenerateContentError {
+            throw GeminiError.firebaseAI(detail: String(describing: error))
+        }
+    }
 }
 
 enum GeminiError: LocalizedError {

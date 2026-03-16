@@ -39,16 +39,24 @@ final class AudioPlayerManager {
         }
 
         removeTimeObserver()
-
         currentEpisode = episode
-        let playerItem = AVPlayerItem(url: url)
-        player = AVPlayer(playerItem: playerItem)
-        player?.play()
-        isPlaying = true
 
-        addTimeObserver()
-        observeDuration(of: playerItem)
-        updateNowPlayingInfo()
+        // Download (or use cached) audio, then play from the local file.
+        Task { @MainActor in
+            do {
+                let localURL = try await AudioCache.shared.localURL(for: url)
+                let playerItem = AVPlayerItem(url: localURL)
+                self.player = AVPlayer(playerItem: playerItem)
+                self.player?.play()
+                self.isPlaying = true
+
+                self.addTimeObserver()
+                self.observeDuration(of: playerItem)
+                self.updateNowPlayingInfo()
+            } catch {
+                print("Failed to download audio: \(error)")
+            }
+        }
     }
 
     func pause() {

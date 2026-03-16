@@ -1,0 +1,44 @@
+{
+  "identifier" : "com.podcut.app.storekit",
+  "type" : "com.apple.configuration.storekit",
+  "version" : 3,
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "1",
+      "localizations" : [
+        {
+          "description" : "Unlock AI Summaries, Chat, and more.",
+          "displayName" : "Podcut Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.podcut.app.pro.monthly",
+      "referenceName" : "Podcut Pro Monthly",
+      "subscriptionGroupID" : "podcut_pro",
+      "type" : "RecurringSubscription",
+      "subscriptionPeriod" : "P1M"
+    }
+  ],
+  "subscriptionGroups" : [
+    {
+      "id" : "podcut_pro",
+      "localizations" : [
+        {
+          "description" : "Podcut Pro",
+          "displayName" : "Podcut Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Podcut Pro",
+      "subscriptions" : [
+        "com.podcut.app.pro.monthly"
+      ]
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "podcut",
+    "_developerTeamID" : "DEVELOPMENT"
+  }
+}

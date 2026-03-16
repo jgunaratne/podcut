@@ -18,7 +18,7 @@ struct TranscriptionSegment: Codable, Identifiable, Hashable {
 }
 
 /// Transcribes a podcast episode's audio using the iOS 26 SpeechTranscriber.
-@Observable
+@MainActor @Observable
 final class TranscriptionService {
     var transcriptionText: String = ""
     var segments: [TranscriptionSegment] = []
@@ -27,29 +27,22 @@ final class TranscriptionService {
     var fractionComplete: Double = 0
     var errorMessage: String?
 
-    /// The current processing time in seconds (updated by the analyzer).
-    private var currentProcessedTime: Double = 0
-
-    /// Transcribe the audio at the given URL.
-    /// Downloads the audio to a temp file, then runs SpeechAnalyzer with SpeechTranscriber.
-    func transcribe(audioURL: URL) async {
+    /// Transcribe audio from a local file.
+    /// The caller is responsible for downloading via AudioCache first.
+    func transcribe(localFileURL: URL) async {
         isTranscribing = true
         transcriptionText = ""
         segments = []
         errorMessage = nil
         fractionComplete = 0
-        currentProcessedTime = 0
-        progress = "Downloading audio…"
+        progress = "Preparing…"
 
-        // Request background execution time so transcription continues
-        // if the user switches away from the app.
+        // Keep the app alive in the background during transcription.
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "Transcription") {
-            // System is about to kill the background time — clean up.
             UIApplication.shared.endBackgroundTask(backgroundTaskID)
             backgroundTaskID = .invalid
         }
-
         defer {
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
@@ -57,14 +50,6 @@ final class TranscriptionService {
         }
 
         do {
-            // 1. Download the audio to a temporary file.
-            let (localURL, _) = try await URLSession.shared.download(from: audioURL)
-            let tempURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString)
-                .appendingPathExtension("mp3")
-            try FileManager.default.moveItem(at: localURL, to: tempURL)
-            defer { try? FileManager.default.removeItem(at: tempURL) }
-
             progress = "Setting up transcriber…"
 
             // 2. Check availability and resolve locale.
@@ -73,59 +58,70 @@ final class TranscriptionService {
                 isTranscribing = false
                 return
             }
-
             let locale = await resolveLocale()
             guard let locale else {
-                errorMessage = "No supported speech language is available. Install a language in Settings → General → Keyboard → Dictation Languages."
+                errorMessage = "No supported speech language found."
                 isTranscribing = false
                 return
             }
 
             let transcriber = SpeechTranscriber(locale: locale, preset: .transcription)
 
-            // 3. Install assets if needed.
+            // 3. Install speech model assets if needed.
             progress = "Checking speech model…"
-            if let installationRequest = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
+            if let req = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
                 progress = "Downloading speech model (first time only)…"
-                try await installationRequest.downloadAndInstall()
+                try await req.downloadAndInstall()
             }
 
-            // 4. Open the audio file and compute duration.
-            let audioFile = try AVAudioFile(forReading: tempURL)
+            // 4. Open the audio file and compute total duration.
+            let audioFile = try AVAudioFile(forReading: localFileURL)
             let totalDuration = Double(audioFile.length) / audioFile.fileFormat.sampleRate
 
             progress = "Transcribing…"
 
-            // 5. Create analyzer with progress tracking.
+            // 5. Create analyzer.
+            //    The handler tracks two things:
+            //    - fractionComplete (from range.end) → progress bar
+            //    - stableTime (from range.start) → segment timestamps
+            //      range.start = end of finalized audio, so it closely matches
+            //      where each final result corresponds in the audio.
+            var stableTime: Double = 0
             let analyzer = try await SpeechAnalyzer(
                 inputAudioFile: audioFile,
                 modules: [transcriber],
                 finishAfterFile: true,
                 volatileRangeChangedHandler: { [weak self] range, _, _ in
                     guard let self, totalDuration > 0 else { return }
-                    let processedSeconds = CMTimeGetSeconds(range.end)
+                    let pct = CMTimeGetSeconds(range.end) / totalDuration
+                    let stable = CMTimeGetSeconds(range.start)
                     Task { @MainActor in
-                        self.fractionComplete = min(processedSeconds / totalDuration, 1.0)
-                        self.currentProcessedTime = processedSeconds
+                        self.fractionComplete = min(pct, 1.0)
+                        self.progress = "Transcribing… \(Int(self.fractionComplete * 100))%"
+                        stableTime = stable
                     }
                 }
             )
 
-            // 6. Collect results as they stream in, capturing timestamps.
+            // 6. Collect results, capturing the current stable time for each.
             for try await result in transcriber.results {
                 let text = String(result.text.characters)
+                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                else { continue }
+
                 let segment = TranscriptionSegment(
-                    timestamp: currentProcessedTime,
+                    timestamp: stableTime,
                     text: text
                 )
                 segments.append(segment)
                 transcriptionText += text + " "
-                let pct = Int(fractionComplete * 100)
-                progress = "Transcribing… \(pct)%"
             }
 
-            // 7. Finalize.
+            // 7. Finalize the analyzer.
             try await analyzer.finalizeAndFinishThroughEndOfInput()
+
+            // Rebuild clean transcript from segments.
+            transcriptionText = segments.map(\.text).joined(separator: " ")
 
             fractionComplete = 1.0
             progress = "Done"
@@ -137,18 +133,16 @@ final class TranscriptionService {
         }
     }
 
-    /// Try the device locale, then en-US, then any installed locale.
+    // MARK: - Locale Resolution
+
     private func resolveLocale() async -> Locale? {
-        // Try current device locale.
         if let locale = await SpeechTranscriber.supportedLocale(equivalentTo: Locale.current) {
             return locale
         }
-        // Fall back to English (US).
         if let enUS = await SpeechTranscriber.supportedLocale(equivalentTo: Locale(identifier: "en-US")) {
             return enUS
         }
-        // Fall back to any installed locale.
-        let installed = SpeechTranscriber.installedLocales
+        let installed = await SpeechTranscriber.installedLocales
         return installed.first
     }
 }

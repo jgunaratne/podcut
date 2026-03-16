@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// A swipeable page view for an episode: Detail → Transcription → Summary.
+/// A swipeable page view for an episode: Detail → Transcription → Summary → Chat.
 struct EpisodePageView: View {
     let episode: Episode
     @State private var currentPage = 0
@@ -14,6 +14,7 @@ struct EpisodePageView: View {
     @State private var isSummarizing = false
     @State private var summaryError: String?
     @State private var isSaved = false
+    @State private var showPaywall = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,6 +30,13 @@ struct EpisodePageView: View {
                 // Page 3: AI Summary
                 summaryPage
                     .tag(2)
+
+                // Page 4: Chat with Transcript
+                PodcastChatView(
+                    transcript: service.transcriptionText,
+                    segments: service.segments
+                )
+                .tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(.easeInOut(duration: 0.3), value: currentPage)
@@ -39,6 +47,17 @@ struct EpisodePageView: View {
         .navigationTitle(episode.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { loadSaved() }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .onChange(of: currentPage) { oldPage, newPage in
+            // Gate Summary (2) and Chat (3) behind Pro.
+            if (newPage == 2 || newPage == 3), !SubscriptionManager.shared.isPro {
+                currentPage = oldPage
+                showPaywall = true
+            }
+        }
+        .task { await SubscriptionManager.shared.loadProducts() }
     }
 
     // MARK: - HTML Description Rendering
@@ -173,6 +192,26 @@ struct EpisodePageView: View {
                             Spacer()
 
                             Button {
+                                Task {
+                                    guard let url = episode.audioURL else { return }
+                                    service.transcriptionText = ""
+                                    service.segments = []
+                                    summaryText = ""
+                                    // Re-download to get fresh audio.
+                                    AudioCache.shared.removeCached(for: url)
+                                    let localFile = try await AudioCache.shared.localURL(for: url)
+                                    await service.transcribe(localFileURL: localFile)
+                                    saveToDevice()
+                                }
+                            } label: {
+                                Label("Re-Transcribe", systemImage: "arrow.clockwise")
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.bordered)
+                            .buttonBorderShape(.capsule)
+                            .disabled(service.isTranscribing)
+
+                            Button {
                                 UIPasteboard.general.string = service.transcriptionText
                             } label: {
                                 Label("Copy", systemImage: "doc.on.doc")
@@ -246,7 +285,8 @@ struct EpisodePageView: View {
                 Button {
                     Task {
                         guard let url = episode.audioURL else { return }
-                        await service.transcribe(audioURL: url)
+                        let localFile = try await AudioCache.shared.localURL(for: url)
+                        await service.transcribe(localFileURL: localFile)
                         saveToDevice()
                     }
                 } label: {
@@ -294,6 +334,17 @@ struct EpisodePageView: View {
                                 .foregroundStyle(.indigo)
 
                             Spacer()
+
+                            Button {
+                                summaryText = ""
+                                Task { await generateSummary() }
+                            } label: {
+                                Label("Regenerate", systemImage: "arrow.clockwise")
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.bordered)
+                            .buttonBorderShape(.capsule)
+                            .disabled(isSummarizing)
 
                             Button {
                                 UIPasteboard.general.string = summaryText
@@ -358,23 +409,39 @@ struct EpisodePageView: View {
     // MARK: - Page Indicator
 
     private var pageIndicator: some View {
-        HStack(spacing: 0) {
-            pageTab(title: "Details", icon: "info.circle", index: 0)
-            pageTab(title: "Transcript", icon: "text.quote", index: 1)
-            pageTab(title: "Summary", icon: "sparkles", index: 2)
+        VStack(spacing: 6) {
+            // Page dots.
+            HStack(spacing: 8) {
+                ForEach(0..<4) { index in
+                    Circle()
+                        .fill(currentPage == index ? Color.indigo : Color.secondary.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                        .scaleEffect(currentPage == index ? 1.2 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: currentPage)
+                }
+            }
+            .padding(.top, 6)
+
+            // Tab bar.
+            HStack(spacing: 0) {
+                pageTab(title: "Details", icon: "info.circle", selectedIcon: "info.circle.fill", index: 0)
+                pageTab(title: "Transcript", icon: "doc.text", selectedIcon: "doc.text.fill", index: 1)
+                pageTab(title: "Summary", icon: "wand.and.stars", selectedIcon: "wand.and.stars", index: 2)
+                pageTab(title: "Chat", icon: "bubble.left.and.text.bubble.right", selectedIcon: "bubble.left.and.text.bubble.right.fill", index: 3)
+            }
         }
-        .padding(.vertical, 8)
+        .padding(.bottom, player.currentEpisode != nil ? 64 : 4)
         .padding(.horizontal, 16)
         .background(.bar)
     }
 
-    private func pageTab(title: String, icon: String, index: Int) -> some View {
+    private func pageTab(title: String, icon: String, selectedIcon: String, index: Int) -> some View {
         let isSelected = currentPage == index
         return Button {
             withAnimation(.easeInOut(duration: 0.25)) { currentPage = index }
         } label: {
             VStack(spacing: 3) {
-                Image(systemName: isSelected ? icon + ".fill" : icon)
+                Image(systemName: isSelected ? selectedIcon : icon)
                     .font(.body.weight(isSelected ? .semibold : .regular))
                     .contentTransition(.symbolEffect(.replace))
                 Text(title)
@@ -531,19 +598,17 @@ struct EpisodePageView: View {
     // MARK: - Audio Seek
 
     private func seekAndPlay(seconds: TimeInterval) {
-        guard player.duration > 0 else {
-            // If not playing, start the episode first.
-            if let url = episode.audioURL {
-                player.play(episode: episode)
-                // Delay the seek slightly to allow the player to load.
-                Task {
-                    try? await Task.sleep(for: .milliseconds(500))
-                    player.seek(to: seconds / max(player.duration, 1))
-                }
+        // If a different episode (or none) is playing, start this episode first.
+        if player.currentEpisode?.id != episode.id {
+            player.play(episode: episode)
+            Task {
+                try? await Task.sleep(for: .milliseconds(500))
+                let dur = max(player.duration, 1)
+                player.seek(to: seconds / dur)
             }
             return
         }
-        player.seek(to: seconds / player.duration)
+        player.seek(to: seconds / max(player.duration, 1))
     }
 
     // MARK: - Persistence

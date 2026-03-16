@@ -108,7 +108,8 @@ struct TranscriptionView: View {
                 Button {
                     Task {
                         guard let url = episode.audioURL else { return }
-                        await service.transcribe(audioURL: url)
+                        let localFile = try await AudioCache.shared.localURL(for: url)
+                        await service.transcribe(localFileURL: localFile)
                         saveToDevice()
                     }
                 } label: {
