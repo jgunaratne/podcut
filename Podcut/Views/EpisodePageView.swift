@@ -18,31 +18,30 @@ struct EpisodePageView: View {
     @State private var showPaywall = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            TabView(selection: $currentPage) {
-                // Page 1: Episode Details
-                episodeDetailPage
-                    .tag(0)
+        TabView(selection: $currentPage) {
+            // Page 1: Episode Details
+            episodeDetailPage
+                .tag(0)
 
-                // Page 2: Transcription
-                transcriptionPage
-                    .tag(1)
+            // Page 2: Transcription
+            transcriptionPage
+                .tag(1)
 
-                // Page 3: AI Summary
-                summaryPage
-                    .tag(2)
+            // Page 3: AI Summary
+            summaryPage
+                .tag(2)
 
-                // Page 4: Chat with Transcript
-                PodcastChatView(
-                    transcript: service.transcriptionText,
-                    segments: service.segments
-                )
-                .tag(3)
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(.easeInOut(duration: 0.3), value: currentPage)
-
-            // Custom page indicator.
+            // Page 4: Chat with Transcript
+            PodcastChatView(
+                transcript: service.transcriptionText,
+                segments: service.segments
+            )
+            .tag(3)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .animation(.easeInOut(duration: 0.3), value: currentPage)
+        .safeAreaInset(edge: .bottom) {
+            // Page indicator overlays the bottom — content scrolls under it.
             pageIndicator
         }
         .background(Color(.systemBackground).ignoresSafeArea())
