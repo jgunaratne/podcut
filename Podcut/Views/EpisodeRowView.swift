@@ -12,35 +12,55 @@ struct EpisodeRowView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Play indicator / button.
-            Image(
-                systemName: isCurrentlyPlaying && player.isPlaying
-                    ? "pause.circle.fill" : "play.circle.fill"
-            )
-            .font(.title)
-            .foregroundStyle(
-                isCurrentlyPlaying
-                    ? AnyShapeStyle(.tint)
-                    : AnyShapeStyle(.secondary)
-            )
-            .contentTransition(.symbolEffect(.replace))
+            ZStack {
+                Circle()
+                    .fill(isCurrentlyPlaying ? Color.indigo.opacity(0.15) : Color(.systemGray5))
+                    .frame(width: 44, height: 44)
+
+                Image(
+                    systemName: isCurrentlyPlaying && player.isPlaying
+                        ? "pause.fill" : "play.fill"
+                )
+                .font(.body.weight(.semibold))
+                .foregroundStyle(isCurrentlyPlaying ? .indigo : .secondary)
+                .contentTransition(.symbolEffect(.replace))
+            }
             .symbolEffect(.pulse, isActive: isCurrentlyPlaying && player.isPlaying)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(episode.title)
                     .font(.subheadline.weight(.medium))
                     .lineLimit(2)
+                    .foregroundStyle(isCurrentlyPlaying ? .indigo : .primary)
 
                 HStack(spacing: 6) {
                     if !episode.pubDate.isEmpty {
-                        Text(episode.pubDate)
+                        Label(episode.pubDate, systemImage: "calendar")
                     }
                     if !episode.duration.isEmpty {
                         Text("·")
-                        Text(episode.duration)
+                        Label(episode.duration, systemImage: "clock")
                     }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .labelStyle(.titleOnly)
+
+                // Progress bar for currently playing episode.
+                if isCurrentlyPlaying {
+                    GeometryReader { geo in
+                        Capsule()
+                            .fill(Color(.systemGray5))
+                            .overlay(alignment: .leading) {
+                                Capsule()
+                                    .fill(.indigo)
+                                    .frame(width: max(geo.size.width * player.playbackProgress, 0))
+                            }
+                    }
+                    .frame(height: 3)
+                    .clipShape(Capsule())
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
 
             Spacer(minLength: 4)
@@ -62,9 +82,8 @@ struct EpisodeRowView: View {
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(
-            isCurrentlyPlaying
-                ? Color.accentColor.opacity(0.08)
-                : Color.clear
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isCurrentlyPlaying ? Color.indigo.opacity(0.06) : Color.clear)
         )
         .animation(.easeInOut(duration: 0.2), value: isCurrentlyPlaying)
     }

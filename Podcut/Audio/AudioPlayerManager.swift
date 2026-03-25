@@ -87,6 +87,15 @@ final class AudioPlayerManager {
         updateNowPlayingInfo()
     }
 
+    func setRate(_ rate: Float) {
+        player?.rate = rate
+        if isPlaying {
+            player?.play()
+            player?.rate = rate
+        }
+        updateNowPlayingInfo()
+    }
+
     func skipForward(_ seconds: TimeInterval = 30) {
         guard let player = player else { return }
         let target = CMTimeAdd(

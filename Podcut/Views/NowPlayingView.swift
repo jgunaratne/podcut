@@ -6,6 +6,9 @@ struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var dragProgress: Double?
+    @State private var playbackRate: Float = 1.0
+
+    private let availableRates: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,6 +51,8 @@ struct NowPlayingView: View {
             .frame(width: 280, height: 280)
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+            .scaleEffect(player.isPlaying ? 1.0 : 0.92)
+            .animation(.spring(duration: 0.5), value: player.isPlaying)
 
             Spacer()
                 .frame(height: 36)
@@ -85,7 +90,7 @@ struct NowPlayingView: View {
                         }
                     }
                 )
-                .tint(.primary)
+                .tint(.indigo)
 
                 HStack {
                     Text(player.formattedTime(player.currentTime))
@@ -139,6 +144,34 @@ struct NowPlayingView: View {
             .glassEffect(.regular, in: .capsule)
 
             Spacer()
+                .frame(height: 20)
+
+            // Playback speed control.
+            HStack(spacing: 16) {
+                Menu {
+                    ForEach(availableRates, id: \.self) { rate in
+                        Button {
+                            playbackRate = rate
+                            player.setRate(rate)
+                        } label: {
+                            HStack {
+                                Text(rateLabel(rate))
+                                if rate == playbackRate {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Text(rateLabel(playbackRate))
+                        .font(.subheadline.weight(.medium).monospacedDigit())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(.ultraThinMaterial, in: Capsule())
+                }
+            }
+
+            Spacer()
         }
         .frame(maxWidth: .infinity)
         .background(
@@ -153,5 +186,15 @@ struct NowPlayingView: View {
             )
             .ignoresSafeArea()
         )
+    }
+
+    private func rateLabel(_ rate: Float) -> String {
+        if rate == 1.0 { return "1×" }
+        if rate == 0.5 { return "0.5×" }
+        if rate == 0.75 { return "0.75×" }
+        if rate == 1.25 { return "1.25×" }
+        if rate == 1.5 { return "1.5×" }
+        if rate == 2.0 { return "2×" }
+        return "\(rate)×"
     }
 }
