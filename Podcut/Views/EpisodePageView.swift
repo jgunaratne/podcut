@@ -63,26 +63,55 @@ struct EpisodePageView: View {
     // MARK: - HTML Description Rendering
 
     /// Renders the episode description, detecting HTML and converting it to styled text.
+    /// Handles dark mode by stripping inline color styles and applying system colors.
     @ViewBuilder
     private var renderedDescription: some View {
-        if episode.description.contains("<") && episode.description.contains(">"),
-           let data = episode.description.data(using: .utf8),
-           let nsAttr = try? NSAttributedString(
-               data: data,
-               options: [
-                   .documentType: NSAttributedString.DocumentType.html,
-                   .characterEncoding: String.Encoding.utf8.rawValue,
-               ],
-               documentAttributes: nil
-           ),
-           let attributed = try? AttributedString(nsAttr)
-        {
-            Text(attributed)
-                .font(.body)
-        } else {
+        if episode.description.contains("<") && episode.description.contains(">") {
+            let cleaned = Self.renderHTMLDescription(episode.description)
+            if let attributed = cleaned {
+                Text(attributed)
+                    .font(.body)
+                    .tint(.indigo)
+            } else {
+                Text(Self.stripHTML(episode.description))
+                    .font(.body)
+            }
+        } else if !episode.description.isEmpty {
             Text(episode.description)
                 .font(.body)
         }
+    }
+
+    /// Convert HTML description to AttributedString, fixing dark mode issues.
+    private static func renderHTMLDescription(_ html: String) -> AttributedString? {
+        // Wrap in a template that forces system-compatible colors.
+        let styledHTML = """
+        <html><head><style>
+        body { font-family: -apple-system; font-size: 16px; color: \(UIColor.label.cssString); }
+        a { color: #5856D6; }
+        </style></head><body>\(html)</body></html>
+        """
+
+        guard let data = styledHTML.data(using: .utf8),
+              let nsAttr = try? NSAttributedString(
+                  data: data,
+                  options: [
+                      .documentType: NSAttributedString.DocumentType.html,
+                      .characterEncoding: String.Encoding.utf8.rawValue,
+                  ],
+                  documentAttributes: nil
+              ),
+              let attributed = try? AttributedString(nsAttr)
+        else { return nil }
+
+        return attributed
+    }
+
+    /// Strip HTML tags as a fallback for unparseable content.
+    private static func stripHTML(_ html: String) -> String {
+        html.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: - Page 1: Detail
@@ -135,22 +164,23 @@ struct EpisodePageView: View {
 
                 // Description.
                 if !episode.description.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Description", systemImage: "doc.text")
-                            .font(.headline)
-
+                    ExpandableDescription(episode: episode) {
                         renderedDescription
-                            .foregroundStyle(.secondary)
                     }
                     .padding(.horizontal)
                 }
 
                 // Hint to swipe.
-                Label("Swipe left for transcription →", systemImage: "hand.draw")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 30)
+                HStack(spacing: 6) {
+                    Image(systemName: "hand.draw")
+                    Text("Swipe left for transcription")
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                }
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 30)
             }
             .padding(.top, 20)
         }

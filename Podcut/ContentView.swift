@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Root view — TabView with Search and Favorites, plus a floating mini player.
+/// Root view — TabView with Search, Favorites, and Settings, plus a floating mini player.
 struct ContentView: View {
     @Environment(AudioPlayerManager.self) private var player
     @State private var selectedTab = 0
@@ -15,6 +15,10 @@ struct ContentView: View {
 
                 Tab("Favorites", systemImage: "star.fill", value: 1) {
                     FavoritesView()
+                }
+
+                Tab("Settings", systemImage: "gearshape", value: 2) {
+                    SettingsView()
                 }
             }
 
