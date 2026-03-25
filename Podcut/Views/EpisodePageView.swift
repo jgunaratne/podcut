@@ -72,7 +72,7 @@ struct EpisodePageView: View {
             if let attributed = cleaned {
                 Text(attributed)
                     .font(.body)
-                    .tint(.indigo)
+                    .tint(.blue)
             } else {
                 Text(Self.stripHTML(episode.description))
                     .font(.body)
@@ -89,7 +89,7 @@ struct EpisodePageView: View {
         let styledHTML = """
         <html><head><style>
         body { font-family: -apple-system; font-size: 16px; color: \(UIColor.label.cssString); }
-        a { color: #5856D6; }
+        a { color: #007AFF; }
         </style></head><body>\(html)</body></html>
         """
 
@@ -147,7 +147,11 @@ struct EpisodePageView: View {
                 // Play button.
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    player.play(episode: episode)
+                    if player.currentEpisode?.id == episode.id {
+                        player.togglePlayPause()
+                    } else {
+                        player.play(episode: episode)
+                    }
                 } label: {
                     Label(
                         player.currentEpisode?.id == episode.id && player.isPlaying
@@ -196,7 +200,7 @@ struct EpisodePageView: View {
                 if service.isTranscribing {
                     VStack(alignment: .leading, spacing: 6) {
                         ProgressView(value: service.fractionComplete)
-                            .tint(.indigo)
+                            .tint(.blue)
                             .animation(.easeInOut(duration: 0.3), value: service.fractionComplete)
 
                         Text(service.progress)
@@ -256,32 +260,39 @@ struct EpisodePageView: View {
                         // Timestamped segments.
                         VStack(spacing: 0) {
                             ForEach(service.segments) { segment in
-                                HStack(alignment: .top, spacing: 12) {
+                                HStack(alignment: .top, spacing: 14) {
                                     // Tappable timecode.
                                     Button {
                                         seekAndPlay(seconds: segment.timestamp)
                                     } label: {
                                         Text(segment.formattedTime)
-                                            .font(.caption.monospacedDigit())
-                                            .foregroundStyle(.indigo)
+                                            .font(.caption.monospacedDigit().weight(.semibold))
+                                            .foregroundStyle(.blue)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3)
+                                            .background(Color.blue.opacity(0.12), in: Capsule())
                                     }
                                     .buttonStyle(.plain)
-                                    .frame(width: 44, alignment: .trailing)
+                                    .frame(width: 54, alignment: .leading)
+                                    .padding(.top, 2)
 
                                     Text(segment.text)
                                         .font(.body)
+                                        .lineSpacing(4)
                                         .textSelection(.enabled)
                                         .frame(maxWidth: .infinity, alignment: .leading)
+                                        .foregroundStyle(.primary.opacity(0.9))
                                 }
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 12)
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 14)
 
                                 if segment.id != service.segments.last?.id {
-                                    Divider().padding(.leading, 56)
+                                    Divider().padding(.leading, 82)
                                 }
                             }
                         }
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
                     }
                     .padding(.horizontal)
 
@@ -365,7 +376,7 @@ struct EpisodePageView: View {
                         HStack {
                             Label("AI Summary", systemImage: "sparkles")
                                 .font(.headline)
-                                .foregroundStyle(.indigo)
+                                .foregroundStyle(.cyan)
 
                             Spacer()
 
@@ -381,7 +392,7 @@ struct EpisodePageView: View {
                             .disabled(isSummarizing)
 
                             ShareLink(
-                                item: "📎 \(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
+                                item: "\(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
                                 subject: Text(episode.title),
                                 message: Text("Check out this podcast summary")
                             ) {
@@ -403,11 +414,16 @@ struct EpisodePageView: View {
 
                         // Render summary with tappable timecodes.
                         summaryWithTimecodes
-                            .padding()
+                            .padding(16)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(
-                                .indigo.opacity(0.08),
-                                in: RoundedRectangle(cornerRadius: 14)
+                                Color(.secondarySystemGroupedBackground),
+                                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            )
+                            .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.cyan.opacity(0.3), lineWidth: 1)
                             )
                     }
                     .padding(.horizontal)
@@ -443,7 +459,7 @@ struct EpisodePageView: View {
                         .padding(.vertical, 14)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.indigo)
+                .tint(.blue)
                 .buttonBorderShape(.capsule)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 8)
@@ -482,7 +498,7 @@ struct EpisodePageView: View {
                 ZStack {
                     if isSelected {
                         Capsule()
-                            .fill(.indigo)
+                            .fill(.blue)
                             .frame(width: 60, height: 32)
                             .matchedGeometryEffect(id: "selectedTab", in: tabs)
                     }
@@ -530,16 +546,18 @@ struct EpisodePageView: View {
     @ViewBuilder
     private var summaryWithTimecodes: some View {
         let lines = summaryText.components(separatedBy: "\n")
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 if line.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Spacer().frame(height: 4)
+                    Spacer().frame(height: 2)
                 } else {
                     summaryLine(line)
+                        .lineSpacing(4)
                 }
             }
         }
         .font(.body)
+        .foregroundStyle(.primary.opacity(0.9))
     }
 
     /// Renders a single summary line, replacing [MM:SS] patterns with tappable buttons.
@@ -559,7 +577,7 @@ struct EpisodePageView: View {
                     return result + Text(str)
                 }
             case .timecode(let display, _):
-                return result + Text(display).foregroundColor(.indigo).underline()
+                return result + Text(display).foregroundColor(.blue).underline()
             }
         }
 

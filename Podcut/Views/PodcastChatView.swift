@@ -89,7 +89,7 @@ struct PodcastChatView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label("Podcast Chat", systemImage: "sparkles.fill")
                     .font(.headline)
-                    .foregroundStyle(.indigo.gradient)
+                    .foregroundStyle(.cyan.gradient)
 
                 Text("Ask me anything about this episode. I'll answer based on the transcript.")
                     .font(.subheadline)
@@ -123,8 +123,8 @@ struct PodcastChatView: View {
                 .font(.caption)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.indigo.opacity(0.12), in: Capsule())
-                .foregroundStyle(.indigo)
+                .background(.cyan.opacity(0.12), in: Capsule())
+                .foregroundStyle(.cyan)
         }
         .buttonStyle(.plain)
     }
@@ -144,7 +144,7 @@ struct PodcastChatView: View {
                 .padding(.vertical, 12)
                 .background(
                     isUser
-                        ? AnyShapeStyle(.indigo.gradient)
+                        ? AnyShapeStyle(.blue.gradient)
                         : AnyShapeStyle(.quaternary),
                     in: RoundedRectangle(cornerRadius: 20, style: .continuous)
                 )
@@ -219,7 +219,7 @@ struct PodcastChatView: View {
                     .font(.headline.bold())
                     .foregroundStyle(.white)
                     .padding(10)
-                    .background(.indigo.gradient, in: Circle())
+                    .background(.blue.gradient, in: Circle())
             }
             .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
             .animation(.easeInOut, value: inputText.isEmpty)

@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Favourites tab — list of starred podcasts.
 struct FavoritesView: View {
+    @Environment(AudioPlayerManager.self) private var player
     @Environment(FavoritesStore.self) private var favorites
     @State private var layout: Layout = .list
 
@@ -18,7 +19,7 @@ struct FavoritesView: View {
                     ContentUnavailableView(
                         "No Favorites Yet",
                         systemImage: "star.circle.fill",
-                        description: Text("Tap the ★ on any podcast to save it here for quick access.")
+                        description: Text("Tap the ") + Text(Image(systemName: "star.fill")) + Text(" on any podcast to save it here for quick access.")
                     )
                 } else {
                     layoutView()
@@ -35,7 +36,10 @@ struct FavoritesView: View {
                     }
                 }
             }
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         }
+        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     @ViewBuilder
@@ -53,12 +57,20 @@ struct FavoritesView: View {
             ForEach(favorites.podcasts) { podcast in
                 NavigationLink(value: podcast) {
                     PodcastRowView(podcast: podcast)
+                        .padding(.vertical, 4)
                 }
+                .listRowSeparator(.hidden)
             }
             .onDelete { indexSet in
                 for index in indexSet {
                     favorites.toggle(favorites.podcasts[index])
                 }
+            }
+            
+            if player.currentEpisode != nil {
+                Color.clear.frame(height: 75)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
         }
         .listStyle(.plain)
@@ -68,7 +80,7 @@ struct FavoritesView: View {
         let columns = [GridItem(.adaptive(minimum: 160), spacing: 16)]
         
         return ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
+            LazyVGrid(columns: columns, spacing: 20) {
                 ForEach(favorites.podcasts) { podcast in
                     NavigationLink(value: podcast) {
                         PodcastGridItemView(podcast: podcast)
@@ -82,6 +94,10 @@ struct FavoritesView: View {
                 }
             }
             .padding()
+            
+            if player.currentEpisode != nil {
+                Color.clear.frame(height: 75)
+            }
         }
     }
 
@@ -101,7 +117,7 @@ private struct PodcastGridItemView: View {
     let podcast: Podcast
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
                 switch phase {
                 case .success(let image):
@@ -120,14 +136,14 @@ private struct PodcastGridItemView: View {
             }
             .aspectRatio(1, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+            .shadow(color: .black.opacity(0.12), radius: 10, y: 5)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(podcast.collectionName)
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
                 Text(podcast.artistName)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }

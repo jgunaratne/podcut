@@ -58,7 +58,7 @@ struct ExpandableDescription<Content: View>: View {
                             .font(.caption2)
                     }
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.indigo)
+                    .foregroundStyle(.blue)
                 }
                 .buttonStyle(.plain)
             }

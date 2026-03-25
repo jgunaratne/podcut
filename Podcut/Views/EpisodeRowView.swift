@@ -10,81 +10,84 @@ struct EpisodeRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Play indicator / button.
-            ZStack {
-                Circle()
-                    .fill(isCurrentlyPlaying ? Color.indigo.opacity(0.15) : Color(.systemGray5))
-                    .frame(width: 44, height: 44)
-
-                Image(
-                    systemName: isCurrentlyPlaying && player.isPlaying
-                        ? "pause.fill" : "play.fill"
-                )
-                .font(.body.weight(.semibold))
-                .foregroundStyle(isCurrentlyPlaying ? .indigo : .secondary)
-                .contentTransition(.symbolEffect(.replace))
-            }
-            .symbolEffect(.pulse, isActive: isCurrentlyPlaying && player.isPlaying)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(episode.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(2)
-                    .foregroundStyle(isCurrentlyPlaying ? .indigo : .primary)
-
-                HStack(spacing: 6) {
-                    if !episode.pubDate.isEmpty {
-                        Label(episode.pubDate, systemImage: "calendar")
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                // Play indicator / button.
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    if isCurrentlyPlaying {
+                        player.togglePlayPause()
+                    } else {
+                        player.play(episode: episode)
                     }
-                    if !episode.duration.isEmpty {
-                        Text("·")
-                        Label(episode.duration, systemImage: "clock")
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .labelStyle(.titleOnly)
-
-                // Progress bar for currently playing episode.
-                if isCurrentlyPlaying {
-                    GeometryReader { geo in
-                        Capsule()
-                            .fill(Color(.systemGray5))
-                            .overlay(alignment: .leading) {
-                                Capsule()
-                                    .fill(.indigo)
-                                    .frame(width: max(geo.size.width * player.playbackProgress, 0))
-                            }
-                    }
-                    .frame(height: 3)
-                    .clipShape(Capsule())
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-
-            Spacer(minLength: 4)
-
-            // Episode page button.
-            if episode.audioURL != nil {
-                NavigationLink {
-                    EpisodePageView(episode: episode)
                 } label: {
-                    Image(systemName: "text.below.photo")
-                        .font(.body)
-                        .foregroundStyle(.indigo)
-                        .frame(width: 34, height: 34)
-                        .background(.indigo.opacity(0.12), in: Circle())
+                    ZStack {
+                        Circle()
+                            .fill(isCurrentlyPlaying ? Color.blue.opacity(0.15) : Color(.systemGray5))
+                            .frame(width: 48, height: 48)
+
+                        Image(
+                            systemName: isCurrentlyPlaying && player.isPlaying
+                                ? "pause.fill" : "play.fill"
+                        )
+                        .font(.title3)
+                        .foregroundStyle(isCurrentlyPlaying ? .blue : .primary)
+                        .contentTransition(.symbolEffect(.replace))
+                    }
+                    .symbolEffect(.pulse, isActive: isCurrentlyPlaying && player.isPlaying)
                 }
                 .buttonStyle(.plain)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(episode.title)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(2)
+                        .foregroundStyle(isCurrentlyPlaying ? .blue : .primary)
+
+                    HStack(spacing: 6) {
+                        if !episode.pubDate.isEmpty {
+                            Label(episode.pubDate, systemImage: "calendar")
+                        }
+                        if !episode.duration.isEmpty {
+                            Text("·")
+                            Label(episode.duration, systemImage: "clock")
+                        }
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .labelStyle(.titleOnly)
+
+                    // Progress bar for currently playing episode.
+                    if isCurrentlyPlaying {
+                        GeometryReader { geo in
+                            Capsule()
+                                .fill(Color(.systemGray5))
+                                .overlay(alignment: .leading) {
+                                    Capsule()
+                                        .fill(.blue)
+                                        .frame(width: max(geo.size.width * player.playbackProgress, 0))
+                                }
+                        }
+                        .frame(height: 4)
+                        .clipShape(Capsule())
+                        .padding(.top, 4)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+
+                Spacer(minLength: 4)
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
+            .padding(.horizontal)
+            .padding(.vertical, 14)
+            .background(isCurrentlyPlaying ? Color.blue.opacity(0.04) : Color.clear)
+            .animation(.easeInOut(duration: 0.2), value: isCurrentlyPlaying)
+            
+            Divider()
+                .padding(.leading, 76)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isCurrentlyPlaying ? Color.indigo.opacity(0.06) : Color.clear)
-        )
-        .animation(.easeInOut(duration: 0.2), value: isCurrentlyPlaying)
     }
 }

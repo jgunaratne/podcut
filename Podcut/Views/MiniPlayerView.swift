@@ -8,22 +8,13 @@ struct MiniPlayerView: View {
     var body: some View {
         if let episode = player.currentEpisode {
             VStack(spacing: 0) {
-                // Progress bar at the top of the mini player.
-                GeometryReader { geo in
-                    Rectangle()
-                        .fill(.indigo)
-                        .frame(width: max(geo.size.width * player.playbackProgress, 0))
-                }
-                .frame(height: 2)
-                .background(Color(.systemGray5))
-
                 HStack(spacing: 12) {
                     // Episode artwork thumbnail — tap to open Now Playing.
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         showNowPlaying = true
                     } label: {
-                        HStack(spacing: 10) {
+                        HStack(spacing: 12) {
                             AsyncImage(url: episode.artworkURL) { phase in
                                 switch phase {
                                 case .success(let image):
@@ -41,10 +32,11 @@ struct MiniPlayerView: View {
                                         }
                                 }
                             }
-                            .frame(width: 42, height: 42)
+                            .frame(width: 46, height: 46)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
 
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 3) {
                                 Text(episode.title)
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.primary)
@@ -69,7 +61,7 @@ struct MiniPlayerView: View {
                             systemName: player.isPlaying
                                 ? "pause.fill" : "play.fill"
                         )
-                        .font(.title3.weight(.semibold))
+                        .font(.title2)
                         .contentTransition(.symbolEffect(.replace))
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
@@ -81,21 +73,34 @@ struct MiniPlayerView: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         player.skipForward()
                     } label: {
-                        Image(systemName: "forward.30")
-                            .font(.subheadline)
-                            .frame(width: 36, height: 36)
+                        Image(systemName: "goforward.30")
+                            .font(.title3)
+                            .frame(width: 40, height: 44)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .padding(.trailing, 4)
                 }
-                .foregroundStyle(.primary)
-                .padding(.leading, 12)
-                .padding(.trailing, 8)
+                .padding(.leading, 10)
                 .padding(.vertical, 8)
+
+                // Progress bar smoothly integrated at the bottom.
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.blue.opacity(0.15))
+                        .overlay(alignment: .leading) {
+                            Rectangle()
+                                .fill(Color.blue)
+                                .frame(width: max(geo.size.width * player.playbackProgress, 0))
+                        }
+                }
+                .frame(height: 3)
             }
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
             .padding(.horizontal, 12)
+            .padding(.bottom, 6)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }

@@ -7,25 +7,24 @@ struct ContentView: View {
     @State private var showNowPlaying = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                Tab("Search", systemImage: "magnifyingglass", value: 0) {
-                    SearchView()
-                }
-
-                Tab("Favorites", systemImage: "star.fill", value: 1) {
-                    FavoritesView()
-                }
-
-                Tab("Settings", systemImage: "gearshape", value: 2) {
-                    SettingsView()
-                }
+        TabView(selection: $selectedTab) {
+            Tab("Search", systemImage: "magnifyingglass", value: 0) {
+                SearchView()
             }
 
-            // Floating mini player.
+            Tab("Favorites", systemImage: "star.fill", value: 1) {
+                FavoritesView()
+            }
+
+            Tab("Settings", systemImage: "gearshape", value: 2) {
+                SettingsView()
+            }
+        }
+        .ignoresSafeArea(.all, edges: .bottom)
+        .overlay(alignment: .bottom) {
             if player.currentEpisode != nil {
                 MiniPlayerView(showNowPlaying: $showNowPlaying)
-                    .padding(.bottom, 54)
+                    .padding(.bottom, 60) // Sit perfectly above the tab bar
             }
         }
         .sheet(isPresented: $showNowPlaying) {

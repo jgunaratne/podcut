@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Search tab — find podcasts via the iTunes Search API.
 struct SearchView: View {
+    @Environment(AudioPlayerManager.self) private var player
     @Environment(FavoritesStore.self) private var favorites
     @State private var query = ""
     @State private var debouncedQuery = ""
@@ -14,14 +15,14 @@ struct SearchView: View {
 
     /// Popular search terms to seed discovery.
     private let discoverTopics = [
-        ("🧠", "Technology"),
-        ("💰", "Business"),
-        ("🎭", "Comedy"),
-        ("🔬", "Science"),
-        ("📖", "History"),
-        ("🏋️", "Health & Fitness"),
-        ("🎵", "Music"),
-        ("🔎", "True Crime"),
+        ("cpu", "Technology"),
+        ("chart.bar.fill", "Business"),
+        ("theatermasks.fill", "Comedy"),
+        ("flask.fill", "Science"),
+        ("books.vertical.fill", "History"),
+        ("figure.run", "Health & Fitness"),
+        ("music.note", "Music"),
+        ("fingerprint", "True Crime"),
     ]
 
     var body: some View {
@@ -43,9 +44,20 @@ struct SearchView: View {
                         description: Text("Try a different search term.")
                     )
                 } else {
-                    List(results) { podcast in
-                        NavigationLink(value: podcast) {
-                            PodcastRowView(podcast: podcast)
+                    List {
+                        ForEach(results) { podcast in
+                            NavigationLink(value: podcast) {
+                                PodcastRowView(podcast: podcast)
+                                    .padding(.vertical, 4)
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                        
+                        // Invisible padding element to push content above the mini player
+                        if player.currentEpisode != nil {
+                            Color.clear.frame(height: 75)
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
                         }
                     }
                     .listStyle(.plain)
@@ -92,7 +104,11 @@ struct SearchView: View {
                         .scaleEffect(1.5)
                 }
             }
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         }
+        // Force the background of the entire tab to extend to bottom
+        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     // MARK: - Discover View
@@ -113,23 +129,27 @@ struct SearchView: View {
                         ],
                         spacing: 10
                     ) {
-                        ForEach(discoverTopics, id: \.1) { emoji, topic in
+                        ForEach(discoverTopics, id: \.1) { iconName, topic in
                             Button {
                                 query = topic
                                 debouncedQuery = topic
                             } label: {
-                                HStack(spacing: 8) {
-                                    Text(emoji)
+                                HStack(spacing: 12) {
+                                    Image(systemName: iconName)
                                         .font(.title3)
+                                        .foregroundStyle(.blue)
+                                        .frame(width: 24)
+                                        
                                     Text(topic)
-                                        .font(.subheadline.weight(.medium))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.primary)
                                         .lineLimit(1)
                                     Spacer()
                                 }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 12)
-                                .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                                .foregroundStyle(.primary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 10)
+                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
                             }
                             .buttonStyle(.plain)
                         }
@@ -139,16 +159,16 @@ struct SearchView: View {
 
                 // Trending section.
                 if !trendingPodcasts.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Trending")
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Trending Podcasts")
                             .font(.title2.bold())
                             .padding(.horizontal)
 
                         ScrollView(.horizontal, showsIndicators: false) {
-                            LazyHStack(spacing: 14) {
+                            LazyHStack(spacing: 16) {
                                 ForEach(trendingPodcasts) { podcast in
                                     NavigationLink(value: podcast) {
-                                        VStack(spacing: 8) {
+                                        VStack(alignment: .leading, spacing: 10) {
                                             AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
                                                 switch phase {
                                                 case .success(let image):
@@ -156,7 +176,7 @@ struct SearchView: View {
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
                                                 default:
-                                                    RoundedRectangle(cornerRadius: 14)
+                                                    RoundedRectangle(cornerRadius: 16)
                                                         .fill(.quaternary)
                                                         .overlay {
                                                             Image(systemName: "mic.fill")
@@ -164,32 +184,34 @@ struct SearchView: View {
                                                         }
                                                 }
                                             }
-                                            .frame(width: 140, height: 140)
-                                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                                            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                                            .frame(width: 150, height: 150)
+                                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                            .shadow(color: .black.opacity(0.12), radius: 10, y: 6)
 
-                                            Text(podcast.collectionName)
-                                                .font(.caption.weight(.medium))
-                                                .lineLimit(2)
-                                                .multilineTextAlignment(.center)
-                                                .foregroundStyle(.primary)
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(podcast.collectionName)
+                                                    .font(.subheadline.weight(.semibold))
+                                                    .lineLimit(2)
+                                                    .foregroundStyle(.primary)
 
-                                            Text(podcast.artistName)
-                                                .font(.caption2)
-                                                .lineLimit(1)
-                                                .foregroundStyle(.secondary)
+                                                Text(podcast.artistName)
+                                                    .font(.caption)
+                                                    .lineLimit(1)
+                                                    .foregroundStyle(.secondary)
+                                            }
                                         }
-                                        .frame(width: 140)
+                                        .frame(width: 150)
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
                             .padding(.horizontal)
+                            .padding(.bottom, 20)
                         }
                     }
                 }
 
-                Spacer(minLength: 40)
+                Spacer(minLength: player.currentEpisode != nil ? 100 : 40)
             }
             .padding(.top, 8)
         }
@@ -230,7 +252,7 @@ struct PodcastRowView: View {
     let podcast: Podcast
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             // Use smaller artwork (100px) for list rows instead of 600px.
             AsyncImage(url: URL(string: podcast.artworkUrl100)) { phase in
                 switch phase {
@@ -239,7 +261,7 @@ struct PodcastRowView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 default:
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 12)
                         .fill(.quaternary)
                         .overlay {
                             Image(systemName: "mic.fill")
@@ -247,12 +269,14 @@ struct PodcastRowView: View {
                         }
                 }
             }
-            .frame(width: 56, height: 56)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .frame(width: 64, height: 64)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .shadow(color: .black.opacity(0.08), radius: 6, y: 3)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(podcast.collectionName)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                     .lineLimit(2)
 
                 Text(podcast.artistName)
@@ -262,14 +286,17 @@ struct PodcastRowView: View {
 
                 if let genre = podcast.primaryGenreName {
                     Text(genre)
-                        .font(.caption2)
+                        .font(.caption2.weight(.medium))
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(.indigo.opacity(0.1), in: Capsule())
-                        .foregroundStyle(.indigo)
+                        .padding(.vertical, 3)
+                        .background(Color.blue.opacity(0.1), in: Capsule())
+                        .foregroundStyle(.blue)
                 }
             }
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
     }
 }
+

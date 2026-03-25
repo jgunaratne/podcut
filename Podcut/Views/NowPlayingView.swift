@@ -32,8 +32,8 @@ struct NowPlayingView: View {
                     // Fallback gradient if no artwork.
                     LinearGradient(
                         colors: [
-                            .indigo.opacity(0.5),
-                            .blue.opacity(0.4),
+                            .blue.opacity(0.6),
+                            .cyan.opacity(0.4),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -90,7 +90,7 @@ struct NowPlayingView: View {
                         }
                     }
                 )
-                .tint(.indigo)
+                .tint(.blue)
 
                 HStack {
                     Text(player.formattedTime(player.currentTime))
@@ -178,8 +178,8 @@ struct NowPlayingView: View {
             LinearGradient(
                 colors: [
                     Color(.systemBackground),
-                    Color.indigo.opacity(0.06),
-                    Color.blue.opacity(0.04),
+                    Color.blue.opacity(0.08),
+                    Color.teal.opacity(0.06),
                 ],
                 startPoint: .top,
                 endPoint: .bottom

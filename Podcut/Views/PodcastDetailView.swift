@@ -112,23 +112,21 @@ struct PodcastDetailView: View {
     private func headerInfo() -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
+                if let genre = podcast.primaryGenreName {
+                    Text(genre.uppercased())
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .tracking(1)
+                }
+
                 Text(podcast.collectionName)
                     .font(.title2.bold())
                     .foregroundStyle(.white)
-                    .shadow(radius: 5)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
 
                 Text(podcast.artistName)
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.8))
-
-                if let genre = podcast.primaryGenreName {
-                    Text(genre)
-                        .font(.caption)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(.white.opacity(0.1), in: Capsule())
-                        .foregroundStyle(.white)
-                }
+                    .foregroundStyle(.white.opacity(0.9))
             }
 
             Spacer()
@@ -144,15 +142,16 @@ struct PodcastDetailView: View {
                     .font(.title2)
                     .foregroundStyle(favorites.isFavorite(podcast) ? .yellow : .white)
                     .symbolEffect(.bounce, value: favorites.isFavorite(podcast))
-                    .padding(10)
+                    .frame(width: 44, height: 44)
                     .background(.ultraThinMaterial, in: Circle())
             }
         }
         .padding(20)
         .background(
-            .black.opacity(0.2),
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .ultraThinMaterial,
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
         )
+        .environment(\.colorScheme, .dark) // Forces the material to be dark glass
         .padding()
     }
 
@@ -186,11 +185,12 @@ struct PodcastDetailView: View {
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(episodes) { episode in
-                        EpisodeRowView(episode: episode)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                player.play(episode: episode)
-                            }
+                        NavigationLink {
+                            EpisodePageView(episode: episode)
+                        } label: {
+                            EpisodeRowView(episode: episode)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

@@ -69,13 +69,13 @@ struct PaywallView: View {
 
     private func background() -> some View {
         LinearGradient(
-            colors: [.indigo.opacity(0.8), .black],
+            colors: [.blue.opacity(0.8), .black],
             startPoint: .top,
             endPoint: .bottom
         )
         .overlay(alignment: .top) {
             Circle()
-                .fill(.indigo)
+                .fill(.cyan)
                 .frame(width: 400)
                 .blur(radius: 100)
                 .offset(y: -200)
@@ -100,7 +100,7 @@ struct PaywallView: View {
         HStack(spacing: 20) {
             Image(systemName: icon)
                 .font(.largeTitle.weight(.semibold))
-                .foregroundStyle(.indigo.gradient)
+                .foregroundStyle(.cyan.gradient)
                 .frame(width: 50)
                 .symbolRenderingMode(.multicolor)
 
@@ -135,11 +135,11 @@ struct PaywallView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(.white, in: .capsule)
-                            .foregroundStyle(.indigo)
+                            .foregroundStyle(.blue)
                     }
                     .buttonBorderShape(.capsule)
                     .padding(.horizontal, 24)
-                    .shadow(color: .indigo.opacity(0.5), radius: 20, y: 10)
+                    .shadow(color: .blue.opacity(0.5), radius: 20, y: 10)
                     .disabled(manager.isLoading)
 
                     Button("Restore Purchases") {

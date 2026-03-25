@@ -3,6 +3,7 @@ import SwiftData
 
 /// App settings screen with cache management, playback defaults, and account info.
 struct SettingsView: View {
+    @Environment(AudioPlayerManager.self) private var player
     @Environment(\.modelContext) private var modelContext
     @State private var audioCacheSize: String = "Calculating…"
     @State private var transcriptionCount: Int = 0
@@ -22,10 +23,10 @@ struct SettingsView: View {
                     HStack(spacing: 14) {
                         ZStack {
                             Circle()
-                                .fill(.indigo.opacity(0.15))
+                                .fill(.blue.opacity(0.15))
                                 .frame(width: 44, height: 44)
                             Image(systemName: manager.isPro ? "crown.fill" : "person.fill")
-                                .foregroundStyle(.indigo)
+                                .foregroundStyle(.blue)
                                 .font(.title3)
                         }
 
@@ -44,7 +45,7 @@ struct SettingsView: View {
                             showAbout = true
                         } label: {
                             Label("Upgrade to Pro", systemImage: "sparkles")
-                                .foregroundStyle(.indigo)
+                                .foregroundStyle(.blue)
                         }
                     }
                 } header: {
@@ -133,8 +134,16 @@ struct SettingsView: View {
                 } header: {
                     Text("About")
                 }
+                
+                if player.currentEpisode != nil {
+                    Color.clear.frame(height: 75)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
             }
             .navigationTitle("Settings")
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
             .alert("Clear Audio Cache?", isPresented: $showClearCacheAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Clear", role: .destructive) {
@@ -163,6 +172,7 @@ struct SettingsView: View {
                 countTranscriptions()
             }
         }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 
     // MARK: - Helpers
