@@ -45,6 +45,7 @@ struct EpisodePageView: View {
             // Custom page indicator.
             pageIndicator
         }
+        .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(episode.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { loadSaved() }
