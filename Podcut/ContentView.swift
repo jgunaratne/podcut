@@ -20,11 +20,11 @@ struct ContentView: View {
                 SettingsView()
             }
         }
-        .ignoresSafeArea(.all, edges: .bottom)
-        .overlay(alignment: .bottom) {
+        .safeAreaInset(edge: .bottom) {
+            // Mini player floats above the tab bar and pushes content up
+            // so nothing is hidden behind it.
             if player.currentEpisode != nil {
                 MiniPlayerView(showNowPlaying: $showNowPlaying)
-                    .padding(.bottom, 60) // Sit perfectly above the tab bar
             }
         }
         .sheet(isPresented: $showNowPlaying) {

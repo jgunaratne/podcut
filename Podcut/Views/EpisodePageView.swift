@@ -478,7 +478,7 @@ struct EpisodePageView: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
-        .padding(.bottom, player.currentEpisode != nil ? 72 : 12)
+        .padding(.bottom, 12)
         .background(.bar)
         .overlay(alignment: .top) {
             Divider()
