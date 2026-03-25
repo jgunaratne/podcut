@@ -36,8 +36,6 @@ struct FavoritesView: View {
                     }
                 }
             }
-            .toolbarBackground(.visible, for: .tabBar)
-            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         }
         .background(Color(.systemBackground).ignoresSafeArea())
     }

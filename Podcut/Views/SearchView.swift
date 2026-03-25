@@ -104,8 +104,6 @@ struct SearchView: View {
                         .scaleEffect(1.5)
                 }
             }
-            .toolbarBackground(.visible, for: .tabBar)
-            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         }
         // Force the background of the entire tab to extend to bottom
         .background(Color(.systemBackground).ignoresSafeArea())

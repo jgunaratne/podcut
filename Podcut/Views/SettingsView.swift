@@ -142,8 +142,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .toolbarBackground(.visible, for: .tabBar)
-            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
             .alert("Clear Audio Cache?", isPresented: $showClearCacheAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Clear", role: .destructive) {
