@@ -1,5 +1,9 @@
 import SwiftUI
 
+private enum Constants {
+    static let headerHeight: CGFloat = 350
+}
+
 /// Detail view for a selected podcast — shows artwork, star button, and episodes.
 struct PodcastDetailView: View {
     let podcast: Podcast
@@ -9,19 +13,37 @@ struct PodcastDetailView: View {
     @State private var episodes: [Episode] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var headerVisible = true
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Header artwork.
-                headerSection
+                // Parallax header.
+                GeometryReader { geo in
+                    let minY = geo.frame(in: .global).minY
+                    let isScrolled = minY <= 0
 
+                    ZStack(alignment: .bottom) {
+                        artwork(minY: minY)
+                        headerInfo()
+                            .offset(y: isScrolled ? abs(minY) / 1.5 : 0)
+                    }
+                    .frame(
+                        width: geo.size.width,
+                        height: Constants.headerHeight + max(minY, 0)
+                    )
+                    .onAppear { headerVisible = true }
+                    .onDisappear { headerVisible = false }
+                }
+                .frame(height: Constants.headerHeight)
+                
                 // Episodes list.
                 episodesSection
             }
         }
-        .navigationTitle(podcast.collectionName)
+        .navigationTitle(headerVisible ? "" : podcast.collectionName)
         .navigationBarTitleDisplayMode(.inline)
+        .ignoresSafeArea(edges: .top)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -39,8 +61,7 @@ struct PodcastDetailView: View {
                         favorites.isFavorite(podcast)
                             ? .yellow : .secondary
                     )
-                    .symbolEffect(
-                        .bounce, value: favorites.isFavorite(podcast))
+                    .symbolEffect(.bounce, value: favorites.isFavorite(podcast))
                 }
             }
         }
@@ -51,105 +72,131 @@ struct PodcastDetailView: View {
 
     // MARK: - Header
 
-    private var headerSection: some View {
-        VStack(spacing: 16) {
-            AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                default:
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.quaternary)
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            Image(systemName: "mic.fill")
-                                .font(.largeTitle)
-                                .foregroundStyle(.secondary)
-                        }
-                }
+    private func artwork(minY: CGFloat) -> some View {
+        AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            default:
+                Rectangle()
+                    .fill(.quaternary)
+                    .overlay {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 80))
+                            .foregroundStyle(.secondary)
+                    }
             }
-            .frame(width: 220, height: 220)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
+        }
+        .frame(height: Constants.headerHeight + max(minY, 0))
+        .scaleEffect(max(1, 1 + (minY / 200)))
+        .offset(y: -minY)
+        .clipped()
+        .overlay(
+            LinearGradient(
+                colors: [.black.opacity(0.6), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .overlay(
+            LinearGradient(
+                colors: [.black.opacity(0.4), .clear],
+                startPoint: .bottom,
+                endPoint: .center
+            )
+        )
+    }
 
-            VStack(spacing: 6) {
+    private func headerInfo() -> some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(podcast.collectionName)
                     .font(.title2.bold())
-                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.white)
+                    .shadow(radius: 5)
 
                 Text(podcast.artistName)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.8))
 
                 if let genre = podcast.primaryGenreName {
                     Text(genre)
                         .font(.caption)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(.ultraThinMaterial, in: Capsule())
+                        .background(.white.opacity(0.1), in: Capsule())
+                        .foregroundStyle(.white)
                 }
             }
+
+            Spacer()
+
+            Button {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+                withAnimation(.spring(duration: 0.35)) {
+                    favorites.toggle(podcast)
+                }
+            } label: {
+                Image(systemName: favorites.isFavorite(podcast) ? "star.fill" : "star")
+                    .font(.title2)
+                    .foregroundStyle(favorites.isFavorite(podcast) ? .yellow : .white)
+                    .symbolEffect(.bounce, value: favorites.isFavorite(podcast))
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
         }
-        .padding(.vertical, 24)
-        .frame(maxWidth: .infinity)
+        .padding(20)
         .background(
-            LinearGradient(
-                colors: [.indigo.opacity(0.06), .clear],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            .black.opacity(0.2),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
+        .padding()
     }
 
     // MARK: - Episodes
 
     private var episodesSection: some View {
-        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders)
-        {
-            Section {
-                if isLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                            .padding(40)
-                        Spacer()
-                    }
-                } else if let error = errorMessage {
-                    ContentUnavailableView(
-                        "Unable to Load Episodes",
-                        systemImage: "exclamationmark.triangle",
-                        description: Text(error)
-                    )
-                    .padding()
-                } else if episodes.isEmpty {
-                    ContentUnavailableView(
-                        "No Episodes",
-                        systemImage: "tray",
-                        description: Text("This podcast has no episodes.")
-                    )
-                    .padding()
-                } else {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Episodes")
+                .font(.headline)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+            
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(40)
+            } else if let error = errorMessage {
+                ContentUnavailableView(
+                    "Unable to Load Episodes",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(error)
+                )
+                .padding()
+            } else if episodes.isEmpty {
+                ContentUnavailableView(
+                    "No Episodes",
+                    systemImage: "tray",
+                    description: Text("This podcast has no episodes.")
+                )
+                .padding()
+            } else {
+                LazyVStack(spacing: 0) {
                     ForEach(episodes) { episode in
                         EpisodeRowView(episode: episode)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 player.play(episode: episode)
                             }
-                        Divider()
-                            .padding(.leading)
                     }
                 }
-            } header: {
-                Text("Episodes")
-                    .font(.headline)
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.bar)
             }
         }
+        .padding(.vertical)
+        .background(.background)
     }
 
     // MARK: - Loading

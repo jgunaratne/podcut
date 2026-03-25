@@ -5,6 +5,7 @@ import SwiftUI
 struct EpisodePageView: View {
     let episode: Episode
     @State private var currentPage = 0
+    @Namespace private var tabs
     @State private var service = TranscriptionService()
     @Environment(\.modelContext) private var modelContext
     @Environment(AudioPlayerManager.self) private var player
@@ -453,50 +454,50 @@ struct EpisodePageView: View {
     // MARK: - Page Indicator
 
     private var pageIndicator: some View {
-        VStack(spacing: 6) {
-            // Page dots.
-            HStack(spacing: 8) {
-                ForEach(0..<4) { index in
-                    Circle()
-                        .fill(currentPage == index ? Color.indigo : Color.secondary.opacity(0.3))
-                        .frame(width: 8, height: 8)
-                        .scaleEffect(currentPage == index ? 1.2 : 1.0)
-                        .animation(.easeInOut(duration: 0.2), value: currentPage)
-                }
-            }
-            .padding(.top, 6)
-
-            // Tab bar.
-            HStack(spacing: 0) {
-                pageTab(title: "Details", icon: "info.circle", selectedIcon: "info.circle.fill", index: 0)
-                pageTab(title: "Transcript", icon: "doc.text", selectedIcon: "doc.text.fill", index: 1)
-                pageTab(title: "Summary", icon: "wand.and.stars", selectedIcon: "wand.and.stars", index: 2)
-                pageTab(title: "Chat", icon: "bubble.left.and.text.bubble.right", selectedIcon: "bubble.left.and.text.bubble.right.fill", index: 3)
-            }
+        HStack(spacing: 0) {
+            pageTab(icon: "info.circle", selectedIcon: "info.circle.fill", index: 0)
+            pageTab(icon: "doc.text", selectedIcon: "doc.text.fill", index: 1)
+            pageTab(icon: "wand.and.stars", selectedIcon: "wand.and.stars.inverse", index: 2)
+            pageTab(icon: "bubble.left.and.text.bubble.right", selectedIcon: "bubble.left.and.text.bubble.right.fill", index: 3)
         }
-        .padding(.bottom, player.currentEpisode != nil ? 64 : 4)
         .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, player.currentEpisode != nil ? 72 : 12)
         .background(.bar)
+        .overlay(alignment: .top) {
+            Divider()
+        }
     }
 
-    private func pageTab(title: String, icon: String, selectedIcon: String, index: Int) -> some View {
+    private func pageTab(icon: String, selectedIcon: String, index: Int) -> some View {
         let isSelected = currentPage == index
+        let isProFeature = index > 1
+        
         return Button {
-            withAnimation(.easeInOut(duration: 0.25)) { currentPage = index }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                currentPage = index
+            }
         } label: {
             VStack(spacing: 3) {
-                Image(systemName: isSelected ? selectedIcon : icon)
-                    .font(.body.weight(isSelected ? .semibold : .regular))
-                    .contentTransition(.symbolEffect(.replace))
-                Text(title)
-                    .font(.caption2.weight(isSelected ? .medium : .regular))
+                ZStack {
+                    if isSelected {
+                        Capsule()
+                            .fill(.indigo)
+                            .frame(width: 60, height: 32)
+                            .matchedGeometryEffect(id: "selectedTab", in: tabs)
+                    }
+                    
+                    Image(systemName: isSelected ? selectedIcon : icon)
+                        .font(.title3.weight(isSelected ? .bold : .regular))
+                        .symbolRenderingMode(isProFeature ? .multicolor : .monochrome)
+                }
+                .frame(height: 32)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
-            .foregroundStyle(isSelected ? .indigo : .secondary)
+            .foregroundStyle(isSelected ? .white : .secondary)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
     }
 
     // MARK: - Generate Summary

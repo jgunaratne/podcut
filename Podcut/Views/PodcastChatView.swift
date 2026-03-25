@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A single chat message.
-struct ChatMessage: Identifiable {
+struct ChatMessage: Identifiable, Hashable {
     let id = UUID()
     let role: String   // "user" or "assistant"
     let text: String
@@ -16,6 +16,7 @@ struct PodcastChatView: View {
     @State private var inputText: String = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var isAnimatingBouncingDots = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,16 +51,8 @@ struct PodcastChatView: View {
                         }
 
                         if isLoading {
-                            HStack {
-                                ProgressView()
-                                    .controlSize(.small)
-                                Text("Thinking…")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                            }
-                            .padding(.horizontal)
-                            .id("loading")
+                            typingIndicator()
+                                .id("loading")
                         }
                     }
                     .padding(.vertical, 12)
@@ -68,6 +61,8 @@ struct PodcastChatView: View {
                 .onChange(of: messages.count) {
                     if let last = messages.last {
                         withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    } else if isLoading {
+                        withAnimation { proxy.scrollTo("loading", anchor: .bottom) }
                     }
                 }
             }
@@ -84,6 +79,7 @@ struct PodcastChatView: View {
             // Input bar.
             inputBar
         }
+        .background(.background)
     }
 
     // MARK: - Welcome
@@ -91,9 +87,9 @@ struct PodcastChatView: View {
     private var welcomeBubble: some View {
         HStack {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Podcast Chat", systemImage: "sparkles")
+                Label("Podcast Chat", systemImage: "sparkles.fill")
                     .font(.headline)
-                    .foregroundStyle(.indigo)
+                    .foregroundStyle(.indigo.gradient)
 
                 Text("Ask me anything about this episode. I'll answer based on the transcript.")
                     .font(.subheadline)
@@ -107,8 +103,12 @@ struct PodcastChatView: View {
                 }
                 .padding(.top, 4)
             }
-            .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .padding(16)
+            .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            }
             Spacer()
         }
         .padding(.horizontal)
@@ -132,48 +132,97 @@ struct PodcastChatView: View {
     // MARK: - Message Bubble
 
     private func messageBubble(_ message: ChatMessage) -> some View {
+        let isUser = message.role == "user"
+        
+        return HStack {
+            if isUser { Spacer(minLength: 60) }
+
+            Text(message.text)
+                .font(.body)
+                .textSelection(.enabled)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    isUser
+                        ? AnyShapeStyle(.indigo.gradient)
+                        : AnyShapeStyle(.quaternary),
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                )
+                .clipShape(bubbleShape(isUser: isUser))
+                .foregroundStyle(isUser ? .white : .primary)
+            
+            if !isUser { Spacer(minLength: 60) }
+        }
+        .padding(.horizontal)
+        .transition(.scale(scale: 0.9, anchor: isUser ? .bottomTrailing : .bottomLeading).combined(with: .opacity))
+    }
+    
+    private func bubbleShape(isUser: Bool) -> some Shape {
+        let corners: UIRectCorner = isUser
+            ? [.topLeft, .bottomLeft, .topRight]
+            : [.topRight, .bottomRight, .topLeft]
+        
+        return UnevenRoundedRectangle(
+            cornerRadii: .init(
+                topLeading: corners.contains(.topLeft) ? 20 : 6,
+                bottomLeading: corners.contains(.bottomLeft) ? 20 : 6,
+                bottomTrailing: corners.contains(.bottomRight) ? 20 : 6,
+                topTrailing: corners.contains(.topRight) ? 20 : 6
+            ),
+            style: .continuous
+        )
+    }
+    
+    private func typingIndicator() -> some View {
         HStack {
-            if message.role == "user" { Spacer(minLength: 60) }
-
-            VStack(alignment: message.role == "user" ? .trailing : .leading, spacing: 4) {
-                Text(message.text)
-                    .font(.body)
-                    .textSelection(.enabled)
+            HStack(spacing: 5) {
+                ForEach(0..<3) { i in
+                    Circle()
+                        .frame(width: 8, height: 8)
+                        .foregroundStyle(.secondary)
+                        .scaleEffect(isAnimatingBouncingDots ? 1 : 0.5)
+                        .animation(
+                            .easeInOut(duration: 0.6)
+                                .repeatForever()
+                                .delay(0.2 * Double(i)),
+                            value: isAnimatingBouncingDots
+                        )
+                }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(
-                message.role == "user"
-                    ? AnyShapeStyle(.indigo.opacity(0.15))
-                    : AnyShapeStyle(.ultraThinMaterial),
-                in: RoundedRectangle(cornerRadius: 16)
-            )
-
-            if message.role == "assistant" { Spacer(minLength: 60) }
+            .onAppear { isAnimatingBouncingDots = true }
+            .padding(16)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(bubbleShape(isUser: false))
+            
+            Spacer()
         }
         .padding(.horizontal)
     }
 
+
     // MARK: - Input Bar
 
     private var inputBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             TextField("Ask about this episode…", text: $inputText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...4)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+                .background(.quaternary, in: Capsule())
                 .onSubmit { sendMessage() }
 
             Button {
                 sendMessage()
             } label: {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.indigo)
+                Image(systemName: "arrow.up")
+                    .font(.headline.bold())
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .background(.indigo.gradient, in: Circle())
             }
             .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+            .animation(.easeInOut, value: inputText.isEmpty)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -211,7 +260,9 @@ struct PodcastChatView: View {
                     history: history,
                     question: question
                 )
-                messages.append(ChatMessage(role: "assistant", text: answer))
+                withAnimation(.spring) {
+                    messages.append(ChatMessage(role: "assistant", text: answer))
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
