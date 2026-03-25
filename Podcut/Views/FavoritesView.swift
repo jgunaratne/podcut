@@ -10,9 +10,9 @@ struct FavoritesView: View {
                 if favorites.podcasts.isEmpty {
                     ContentUnavailableView(
                         "No Favorites Yet",
-                        systemImage: "star",
+                        systemImage: "star.circle",
                         description: Text(
-                            "Star a podcast to see it here.")
+                            "Tap the ★ on any podcast to save it here for quick access.")
                     )
                 } else {
                     List {

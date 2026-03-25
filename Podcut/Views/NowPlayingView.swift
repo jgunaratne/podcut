@@ -29,7 +29,7 @@ struct NowPlayingView: View {
                     // Fallback gradient if no artwork.
                     LinearGradient(
                         colors: [
-                            .purple.opacity(0.5),
+                            .indigo.opacity(0.5),
                             .blue.opacity(0.4),
                         ],
                         startPoint: .topLeading,
@@ -105,12 +105,18 @@ struct NowPlayingView: View {
 
             // Playback controls.
             HStack(spacing: 44) {
-                Button { player.skipBackward() } label: {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    player.skipBackward()
+                } label: {
                     Image(systemName: "gobackward.15")
                         .font(.title2)
                 }
 
-                Button { player.togglePlayPause() } label: {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    player.togglePlayPause()
+                } label: {
                     Image(
                         systemName: player.isPlaying
                             ? "pause.circle.fill" : "play.circle.fill"
@@ -119,7 +125,10 @@ struct NowPlayingView: View {
                     .contentTransition(.symbolEffect(.replace))
                 }
 
-                Button { player.skipForward() } label: {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    player.skipForward()
+                } label: {
                     Image(systemName: "goforward.30")
                         .font(.title2)
                 }
@@ -136,7 +145,7 @@ struct NowPlayingView: View {
             LinearGradient(
                 colors: [
                     Color(.systemBackground),
-                    Color.purple.opacity(0.06),
+                    Color.indigo.opacity(0.06),
                     Color.blue.opacity(0.04),
                 ],
                 startPoint: .top,

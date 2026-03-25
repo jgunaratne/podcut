@@ -22,10 +22,10 @@ struct SearchView: View {
                     )
                 } else if results.isEmpty && !isSearching {
                     ContentUnavailableView(
-                        "Search Podcasts",
-                        systemImage: "magnifyingglass",
+                        "Discover Podcasts",
+                        systemImage: "waveform.badge.magnifyingglass",
                         description: Text(
-                            "Find your next favorite show.")
+                            "Search by name, topic, or host — then transcribe and summarize any episode with AI.")
                     )
                 } else {
                     List(results) { podcast in
@@ -126,8 +126,11 @@ struct PodcastRowView: View {
 
                 if let genre = podcast.primaryGenreName {
                     Text(genre)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(.indigo.opacity(0.1), in: Capsule())
+                        .foregroundStyle(.indigo)
                 }
             }
         }

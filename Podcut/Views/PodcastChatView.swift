@@ -22,8 +22,8 @@ struct PodcastChatView: View {
             if transcript.isEmpty {
                 ContentUnavailableView(
                     "Transcribe First",
-                    systemImage: "text.bubble",
-                    description: Text("Transcribe the episode to start chatting about it.")
+                    systemImage: "bubble.left.and.text.bubble.right",
+                    description: Text("Transcribe the episode first, then you can ask questions about anything discussed.")
                 )
             } else {
                 chatContent
@@ -186,6 +186,7 @@ struct PodcastChatView: View {
         let question = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty, !isLoading else { return }
 
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         inputText = ""
         messages.append(ChatMessage(role: "user", text: question))
         errorMessage = nil

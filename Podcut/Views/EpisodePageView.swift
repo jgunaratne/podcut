@@ -116,6 +116,7 @@ struct EpisodePageView: View {
 
                 // Play button.
                 Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     player.play(episode: episode)
                 } label: {
                     Label(
@@ -283,10 +284,12 @@ struct EpisodePageView: View {
         .safeAreaInset(edge: .bottom) {
             if !service.isTranscribing && service.transcriptionText.isEmpty {
                 Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     Task {
                         guard let url = episode.audioURL else { return }
                         let localFile = try await AudioCache.shared.localURL(for: url)
                         await service.transcribe(localFileURL: localFile)
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
                         saveToDevice()
                     }
                 } label: {
@@ -345,6 +348,17 @@ struct EpisodePageView: View {
                             .buttonStyle(.bordered)
                             .buttonBorderShape(.capsule)
                             .disabled(isSummarizing)
+
+                            ShareLink(
+                                item: "📎 \(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
+                                subject: Text(episode.title),
+                                message: Text("Check out this podcast summary")
+                            ) {
+                                Label("Share", systemImage: "square.and.arrow.up")
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.bordered)
+                            .buttonBorderShape(.capsule)
 
                             Button {
                                 UIPasteboard.general.string = summaryText

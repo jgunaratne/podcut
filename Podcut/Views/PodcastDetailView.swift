@@ -25,6 +25,8 @@ struct PodcastDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
                     withAnimation(.spring(duration: 0.35)) {
                         favorites.toggle(podcast)
                     }
@@ -92,6 +94,13 @@ struct PodcastDetailView: View {
         }
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
+        .background(
+            LinearGradient(
+                colors: [.indigo.opacity(0.06), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     // MARK: - Episodes

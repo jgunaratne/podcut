@@ -12,9 +12,16 @@ struct PaywallView: View {
                 VStack(spacing: 24) {
                     // Header.
                     VStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.indigo.gradient)
+                        ZStack {
+                            Circle()
+                                .fill(.indigo.opacity(0.1))
+                                .frame(width: 100, height: 100)
+
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 48))
+                                .foregroundStyle(.indigo.gradient)
+                                .symbolEffect(.variableColor.iterative.reversing)
+                        }
 
                         Text("Podcut Pro")
                             .font(.largeTitle.bold())

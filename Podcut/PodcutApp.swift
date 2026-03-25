@@ -16,7 +16,7 @@ struct PodcutApp: App {
             ContentView()
                 .environment(favoritesStore)
                 .environment(audioPlayer)
-                .tint(.purple)
+                .tint(.indigo)
         }
         .modelContainer(for: TranscriptionRecord.self)
     }
