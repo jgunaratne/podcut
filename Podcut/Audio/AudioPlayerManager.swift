@@ -17,6 +17,7 @@ final class AudioPlayerManager {
 
     private var player: AVPlayer?
     private var timeObserver: Any?
+    private var loadTask: Task<Void, Never>?
 
     init() {
         configureAudioSession()
@@ -30,7 +31,10 @@ final class AudioPlayerManager {
     // MARK: - Playback Controls
 
     func play(episode: Episode) {
-        guard let url = episode.audioURL else { return }
+        guard let url = episode.audioURL else {
+            print("No audio URL for episode: \(episode.title)")
+            return
+        }
 
         // If same episode, just resume.
         if currentEpisode?.id == episode.id, player != nil {
@@ -38,15 +42,33 @@ final class AudioPlayerManager {
             return
         }
 
+        // Cancel any in-flight load.
+        loadTask?.cancel()
         removeTimeObserver()
+        player?.pause()
+        player = nil
         currentEpisode = episode
+        isPlaying = false
 
         // Download (or use cached) audio, then play from the local file.
-        Task { @MainActor in
+        loadTask = Task { @MainActor in
             do {
                 let localURL = try await AudioCache.shared.localURL(for: url)
                 let playerItem = AVPlayerItem(url: localURL)
                 self.player = AVPlayer(playerItem: playerItem)
+
+                // Wait for the player item to be ready before playing.
+                while playerItem.status == .unknown {
+                    try? await Task.sleep(for: .milliseconds(50))
+                    if Task.isCancelled { return }
+                }
+
+                guard playerItem.status == .readyToPlay else {
+                    print("Player item failed to load: \(playerItem.error?.localizedDescription ?? "unknown")")
+                    self.currentEpisode = nil
+                    return
+                }
+
                 self.player?.play()
                 self.isPlaying = true
 
@@ -55,18 +77,30 @@ final class AudioPlayerManager {
                 self.updateNowPlayingInfo()
             } catch {
                 print("Failed to download audio: \(error)")
+                self.currentEpisode = nil
+                self.isPlaying = false
             }
         }
     }
 
     func pause() {
+        guard player != nil else { return }
         player?.pause()
         isPlaying = false
         updateNowPlayingInfo()
     }
 
     func resume() {
-        player?.play()
+        guard let player else {
+            // No player exists — try replaying the current episode.
+            if let episode = currentEpisode {
+                let ep = episode
+                currentEpisode = nil  // Force a fresh load
+                play(episode: ep)
+            }
+            return
+        }
+        player.play()
         isPlaying = true
         updateNowPlayingInfo()
     }
@@ -74,8 +108,13 @@ final class AudioPlayerManager {
     func togglePlayPause() {
         if isPlaying {
             pause()
-        } else {
+        } else if player != nil {
             resume()
+        } else if let episode = currentEpisode {
+            // Player was nil — restart playback.
+            let ep = episode
+            currentEpisode = nil
+            play(episode: ep)
         }
     }
 
