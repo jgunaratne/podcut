@@ -233,34 +233,33 @@ struct EpisodePageView: View {
 
                             Spacer()
 
-                            Button {
-                                Task {
-                                    guard let url = episode.audioURL else { return }
-                                    service.transcriptionText = ""
-                                    service.segments = []
-                                    summaryText = ""
-                                    // Re-download to get fresh audio.
-                                    AudioCache.shared.removeCached(for: url)
-                                    let localFile = try await AudioCache.shared.localURL(for: url)
-                                    await service.transcribe(localFileURL: localFile)
-                                    saveToDevice()
+                            Menu {
+                                Button {
+                                    Task {
+                                        guard let url = episode.audioURL else { return }
+                                        service.transcriptionText = ""
+                                        service.segments = []
+                                        summaryText = ""
+                                        AudioCache.shared.removeCached(for: url)
+                                        let localFile = try await AudioCache.shared.localURL(for: url)
+                                        await service.transcribe(localFileURL: localFile)
+                                        saveToDevice()
+                                    }
+                                } label: {
+                                    Label("Redo Transcription", systemImage: "arrow.clockwise")
+                                }
+                                .disabled(service.isTranscribing)
+
+                                Button {
+                                    UIPasteboard.general.string = service.transcriptionText
+                                } label: {
+                                    Label("Copy Text", systemImage: "doc.on.doc")
                                 }
                             } label: {
-                                Label("Transcribe", systemImage: "arrow.clockwise")
-                                    .font(.subheadline)
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
                             }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
-                            .disabled(service.isTranscribing)
-
-                            Button {
-                                UIPasteboard.general.string = service.transcriptionText
-                            } label: {
-                                Label("Copy", systemImage: "doc.on.doc")
-                                    .font(.subheadline)
-                            }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
                         }
 
                         // Timestamped segments.
@@ -380,42 +379,36 @@ struct EpisodePageView: View {
                 if !summaryText.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Label("AI Summary", systemImage: "sparkles")
+                            Text("AI Summary")
                                 .font(.headline)
-                                .foregroundStyle(.cyan)
 
                             Spacer()
 
-                            Button {
-                                summaryText = ""
-                                Task { await generateSummary() }
-                            } label: {
-                                Label("Regenerate", systemImage: "arrow.clockwise")
-                                    .font(.subheadline)
-                            }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
-                            .disabled(isSummarizing)
+                            Menu {
+                                Button {
+                                    summaryText = ""
+                                    Task { await generateSummary() }
+                                } label: {
+                                    Label("Regenerate", systemImage: "arrow.clockwise")
+                                }
+                                .disabled(isSummarizing)
 
-                            ShareLink(
-                                item: "\(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
-                                subject: Text(episode.title),
-                                message: Text("Check out this podcast summary")
-                            ) {
-                                Label("Share", systemImage: "square.and.arrow.up")
-                                    .font(.subheadline)
-                            }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
+                                Button {
+                                    UIPasteboard.general.string = summaryText
+                                } label: {
+                                    Label("Copy Text", systemImage: "doc.on.doc")
+                                }
 
-                            Button {
-                                UIPasteboard.general.string = summaryText
+                                ShareLink(
+                                    item: "\(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
+                                    subject: Text(episode.title),
+                                    message: Text("Check out this podcast summary")
+                                )
                             } label: {
-                                Label("Copy", systemImage: "doc.on.doc")
-                                    .font(.subheadline)
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
                             }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
                         }
 
                         // Render summary with tappable timecodes.
@@ -427,10 +420,6 @@ struct EpisodePageView: View {
                                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                             )
                             .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(Color.cyan.opacity(0.3), lineWidth: 1)
-                            )
                     }
                     .padding(.horizontal)
 
