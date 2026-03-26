@@ -124,16 +124,32 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Link(destination: URL(string: "https://podcut.app/privacy")!) {
+                    NavigationLink {
+                        PrivacyPolicyView()
+                    } label: {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
 
-                    Link(destination: URL(string: "https://podcut.app/terms")!) {
+                    NavigationLink {
+                        TermsOfServiceView()
+                    } label: {
                         Label("Terms of Service", systemImage: "doc.plaintext")
                     }
                 } header: {
                     Text("About")
                 }
+
+                // Debug section (only in DEBUG builds).
+                #if DEBUG
+                Section {
+                    Button("Replay Onboarding") {
+                        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    }
+                } header: {
+                    Text("Debug")
+                }
+                #endif
                 
                 if player.currentEpisode != nil {
                     Color.clear.frame(height: 75)
