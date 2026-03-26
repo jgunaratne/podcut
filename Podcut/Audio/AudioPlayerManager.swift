@@ -92,7 +92,11 @@ final class AudioPlayerManager {
                     return
                 }
 
-                avPlayer.play()
+                // Apply default playback rate from settings.
+                let savedRate = UserDefaults.standard.float(forKey: "defaultPlaybackRate")
+                let rate = savedRate > 0 ? savedRate : 1.0
+                avPlayer.rate = rate
+
                 self.isPlaying = true
 
                 self.addTimeObserver()

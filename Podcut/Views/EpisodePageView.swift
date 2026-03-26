@@ -240,9 +240,13 @@ struct EpisodePageView: View {
                                     service.segments = []
                                     summaryText = ""
                                     AudioCache.shared.removeCached(for: url)
-                                    let localFile = try await AudioCache.shared.localURL(for: url)
-                                    await service.transcribe(localFileURL: localFile)
-                                    saveToDevice()
+                                    do {
+                                        let localFile = try await AudioCache.shared.localURL(for: url)
+                                        await service.transcribe(localFileURL: localFile)
+                                        saveToDevice()
+                                    } catch {
+                                        service.errorMessage = "Failed to download audio: \(error.localizedDescription)"
+                                    }
                                 }
                             } label: {
                                 Image(systemName: "arrow.clockwise")
@@ -332,10 +336,14 @@ struct EpisodePageView: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     Task {
                         guard let url = episode.audioURL else { return }
-                        let localFile = try await AudioCache.shared.localURL(for: url)
-                        await service.transcribe(localFileURL: localFile)
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
-                        saveToDevice()
+                        do {
+                            let localFile = try await AudioCache.shared.localURL(for: url)
+                            await service.transcribe(localFileURL: localFile)
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                            saveToDevice()
+                        } catch {
+                            service.errorMessage = "Failed to download audio: \(error.localizedDescription)"
+                        }
                     }
                 } label: {
                     Label("Start Transcription", systemImage: "waveform.badge.mic")
@@ -657,13 +665,18 @@ struct EpisodePageView: View {
         if player.currentEpisode?.id != episode.id {
             player.play(episode: episode)
             Task {
-                try? await Task.sleep(for: .milliseconds(500))
-                let dur = max(player.duration, 1)
-                player.seek(to: seconds / dur)
+                // Wait for the player to load and report a valid duration.
+                for _ in 0..<40 {  // Up to 4 seconds
+                    try? await Task.sleep(for: .milliseconds(100))
+                    if player.duration > 0 { break }
+                }
+                guard player.duration > 0 else { return }
+                player.seek(to: seconds / player.duration)
             }
             return
         }
-        player.seek(to: seconds / max(player.duration, 1))
+        guard player.duration > 0 else { return }
+        player.seek(to: seconds / player.duration)
     }
 
     // MARK: - Persistence

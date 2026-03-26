@@ -2,7 +2,6 @@ import SwiftUI
 
 /// Search tab — find podcasts via the iTunes Search API.
 struct SearchView: View {
-    @Environment(AudioPlayerManager.self) private var player
     @Environment(FavoritesStore.self) private var favorites
     @State private var query = ""
     @State private var debouncedQuery = ""
