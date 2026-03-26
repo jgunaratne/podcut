@@ -70,7 +70,7 @@ struct PrivacyPolicyView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func section(title: String, @ViewBuilder content: () -> String) -> some View {
+    private func section(title: String, content: () -> String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
@@ -137,7 +137,7 @@ struct TermsOfServiceView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func section(title: String, @ViewBuilder content: () -> String) -> some View {
+    private func section(title: String, content: () -> String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
