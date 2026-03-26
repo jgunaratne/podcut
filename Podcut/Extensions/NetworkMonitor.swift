@@ -57,7 +57,7 @@ struct RetryView: View {
                     .font(.headline)
             }
             .buttonStyle(.borderedProminent)
-            .tint(.indigo)
+            .tint(.blue)
             .buttonBorderShape(.capsule)
         }
     }

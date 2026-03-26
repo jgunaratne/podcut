@@ -17,13 +17,13 @@ struct OnboardingView: View {
             "text.badge.checkmark",
             "Transcribe Anything",
             "Convert full episodes to text on-device — no cloud, no waiting. Tap any timecode to jump right to that moment.",
-            .indigo
+            .blue
         ),
         (
             "sparkles",
             "AI Summaries & Chat",
             "Get timestamped summaries powered by Gemini AI. Ask questions about any episode and get instant answers.",
-            .purple
+            .blue
         ),
     ]
 
@@ -44,7 +44,7 @@ struct OnboardingView: View {
                 HStack(spacing: 8) {
                     ForEach(0..<pages.count, id: \.self) { index in
                         Circle()
-                            .fill(currentPage == index ? Color.indigo : Color.secondary.opacity(0.3))
+                            .fill(currentPage == index ? Color.blue : Color.secondary.opacity(0.3))
                             .frame(width: 8, height: 8)
                             .scaleEffect(currentPage == index ? 1.2 : 1.0)
                             .animation(.easeInOut(duration: 0.2), value: currentPage)
@@ -66,7 +66,7 @@ struct OnboardingView: View {
                         .padding(.vertical, 16)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.indigo)
+                .tint(.blue)
                 .buttonBorderShape(.capsule)
                 .padding(.horizontal, 32)
 
@@ -82,7 +82,7 @@ struct OnboardingView: View {
         }
         .background(
             LinearGradient(
-                colors: [Color(.systemBackground), Color.indigo.opacity(0.04)],
+                colors: [Color(.systemBackground), Color.blue.opacity(0.04)],
                 startPoint: .top,
                 endPoint: .bottom
             )
