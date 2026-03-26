@@ -246,7 +246,7 @@ struct EpisodePageView: View {
                                     saveToDevice()
                                 }
                             } label: {
-                                Label("Re-Transcribe", systemImage: "arrow.clockwise")
+                                Label("Transcribe", systemImage: "arrow.clockwise")
                                     .font(.subheadline)
                             }
                             .buttonStyle(.bordered)
