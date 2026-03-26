@@ -37,7 +37,6 @@ struct FavoritesView: View {
                 }
             }
         }
-        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     @ViewBuilder

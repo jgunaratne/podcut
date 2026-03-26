@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Root view — shows onboarding on first launch, then the main TabView.
 struct ContentView: View {
@@ -6,6 +7,14 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNowPlaying = false
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+    init() {
+        // Make the tab bar translucent so scroll content renders behind it.
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
 
     var body: some View {
         if hasCompletedOnboarding {

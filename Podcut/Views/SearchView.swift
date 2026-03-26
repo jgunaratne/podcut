@@ -105,8 +105,6 @@ struct SearchView: View {
                 }
             }
         }
-        // Force the background of the entire tab to extend to bottom
-        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     // MARK: - Discover View

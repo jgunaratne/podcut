@@ -44,7 +44,7 @@ struct EpisodePageView: View {
             // Page indicator overlays the bottom — content scrolls under it.
             pageIndicator
         }
-        .background(Color(.systemBackground).ignoresSafeArea())
+        
         .navigationTitle(episode.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { loadSaved() }

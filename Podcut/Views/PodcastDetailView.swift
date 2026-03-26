@@ -43,7 +43,7 @@ struct PodcastDetailView: View {
         }
         .navigationTitle(headerVisible ? "" : podcast.collectionName)
         .navigationBarTitleDisplayMode(.inline)
-        .background(Color(.systemBackground).ignoresSafeArea())
+        
         .ignoresSafeArea(edges: .top)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

@@ -186,7 +186,6 @@ struct SettingsView: View {
                 countTranscriptions()
             }
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 
     // MARK: - Helpers
