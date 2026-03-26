@@ -227,37 +227,17 @@ struct EpisodePageView: View {
                 // Transcription with timecodes.
                 if !service.segments.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        HStack {
+                        HStack(spacing: 16) {
                             Text("Transcription")
                                 .font(.headline)
 
                             Spacer()
 
-                            Menu {
-                                Button {
-                                    Task {
-                                        guard let url = episode.audioURL else { return }
-                                        service.transcriptionText = ""
-                                        service.segments = []
-                                        summaryText = ""
-                                        AudioCache.shared.removeCached(for: url)
-                                        let localFile = try await AudioCache.shared.localURL(for: url)
-                                        await service.transcribe(localFileURL: localFile)
-                                        saveToDevice()
-                                    }
-                                } label: {
-                                    Label("Redo Transcription", systemImage: "arrow.clockwise")
-                                }
-                                .disabled(service.isTranscribing)
-
-                                Button {
-                                    UIPasteboard.general.string = service.transcriptionText
-                                } label: {
-                                    Label("Copy Text", systemImage: "doc.on.doc")
-                                }
+                            Button {
+                                UIPasteboard.general.string = service.transcriptionText
                             } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .font(.title3)
+                                Image(systemName: "doc.on.doc")
+                                    .font(.body)
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -378,35 +358,27 @@ struct EpisodePageView: View {
 
                 if !summaryText.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        HStack {
+                        HStack(spacing: 16) {
                             Text("AI Summary")
                                 .font(.headline)
 
                             Spacer()
 
-                            Menu {
-                                Button {
-                                    summaryText = ""
-                                    Task { await generateSummary() }
-                                } label: {
-                                    Label("Regenerate", systemImage: "arrow.clockwise")
-                                }
-                                .disabled(isSummarizing)
-
-                                Button {
-                                    UIPasteboard.general.string = summaryText
-                                } label: {
-                                    Label("Copy Text", systemImage: "doc.on.doc")
-                                }
-
-                                ShareLink(
-                                    item: "\(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
-                                    subject: Text(episode.title),
-                                    message: Text("Check out this podcast summary")
-                                )
+                            Button {
+                                UIPasteboard.general.string = summaryText
                             } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .font(.title3)
+                                Image(systemName: "doc.on.doc")
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            ShareLink(
+                                item: "\(episode.title)\n\n\(summaryText)\n\n— Summarized with Podcut",
+                                subject: Text(episode.title),
+                                message: Text("Check out this podcast summary")
+                            ) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.body)
                                     .foregroundStyle(.secondary)
                             }
                         }
