@@ -18,6 +18,7 @@ final class AudioPlayerManager {
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var loadTask: Task<Void, Never>?
+    private var statusObservation: NSKeyValueObservation?
 
     init() {
         configureAudioSession()
@@ -26,6 +27,7 @@ final class AudioPlayerManager {
 
     deinit {
         removeTimeObserver()
+        statusObservation?.invalidate()
     }
 
     // MARK: - Playback Controls
@@ -45,6 +47,8 @@ final class AudioPlayerManager {
         // Cancel any in-flight load.
         loadTask?.cancel()
         removeTimeObserver()
+        statusObservation?.invalidate()
+        statusObservation = nil
         player?.pause()
         player = nil
         currentEpisode = episode
@@ -54,31 +58,52 @@ final class AudioPlayerManager {
         loadTask = Task { @MainActor in
             do {
                 let localURL = try await AudioCache.shared.localURL(for: url)
-                let playerItem = AVPlayerItem(url: localURL)
-                self.player = AVPlayer(playerItem: playerItem)
+                if Task.isCancelled { return }
 
-                // Wait for the player item to be ready before playing.
-                while playerItem.status == .unknown {
-                    try? await Task.sleep(for: .milliseconds(50))
-                    if Task.isCancelled { return }
+                let playerItem = AVPlayerItem(url: localURL)
+                let avPlayer = AVPlayer(playerItem: playerItem)
+                self.player = avPlayer
+
+                // Use KVO to wait for readyToPlay instead of polling.
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    // If already ready (cached local file), continue immediately.
+                    if playerItem.status == .readyToPlay {
+                        continuation.resume()
+                        return
+                    }
+                    if playerItem.status == .failed {
+                        continuation.resume()
+                        return
+                    }
+
+                    self.statusObservation = playerItem.observe(\.status, options: [.new]) { _, _ in
+                        continuation.resume()
+                    }
                 }
 
+                self.statusObservation?.invalidate()
+                self.statusObservation = nil
+
+                guard !Task.isCancelled else { return }
+
                 guard playerItem.status == .readyToPlay else {
-                    print("Player item failed to load: \(playerItem.error?.localizedDescription ?? "unknown")")
+                    print("Player item failed: \(playerItem.error?.localizedDescription ?? "unknown")")
                     self.currentEpisode = nil
                     return
                 }
 
-                self.player?.play()
+                avPlayer.play()
                 self.isPlaying = true
 
                 self.addTimeObserver()
                 self.observeDuration(of: playerItem)
                 self.updateNowPlayingInfo()
             } catch {
-                print("Failed to download audio: \(error)")
-                self.currentEpisode = nil
-                self.isPlaying = false
+                if !Task.isCancelled {
+                    print("Failed to download audio: \(error)")
+                    self.currentEpisode = nil
+                    self.isPlaying = false
+                }
             }
         }
     }
@@ -95,7 +120,7 @@ final class AudioPlayerManager {
             // No player exists — try replaying the current episode.
             if let episode = currentEpisode {
                 let ep = episode
-                currentEpisode = nil  // Force a fresh load
+                currentEpisode = nil
                 play(episode: ep)
             }
             return
@@ -111,7 +136,6 @@ final class AudioPlayerManager {
         } else if player != nil {
             resume()
         } else if let episode = currentEpisode {
-            // Player was nil — restart playback.
             let ep = episode
             currentEpisode = nil
             play(episode: ep)
@@ -192,13 +216,14 @@ final class AudioPlayerManager {
 
     private func observeDuration(of item: AVPlayerItem) {
         Task { @MainActor in
-            // Poll until the item is ready to play.
-            while item.status != .readyToPlay {
-                try? await Task.sleep(for: .milliseconds(200))
+            do {
+                let seconds = try await item.asset.load(.duration).seconds
+                self.duration = seconds
+                self.updateNowPlayingInfo()
+            } catch {
+                print("Failed to load duration: \(error)")
+                self.duration = 0
             }
-            let seconds = try? await item.asset.load(.duration).seconds
-            self.duration = seconds ?? 0
-            self.updateNowPlayingInfo()
         }
     }
 
