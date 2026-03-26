@@ -75,7 +75,7 @@ struct PaywallView: View {
         )
         .overlay(alignment: .top) {
             Circle()
-                .fill(.cyan)
+                .fill(.blue)
                 .frame(width: 400)
                 .blur(radius: 100)
                 .offset(y: -200)
@@ -100,7 +100,7 @@ struct PaywallView: View {
         HStack(spacing: 20) {
             Image(systemName: icon)
                 .font(.largeTitle.weight(.semibold))
-                .foregroundStyle(.cyan.gradient)
+                .foregroundStyle(.blue.gradient)
                 .frame(width: 50)
                 .symbolRenderingMode(.multicolor)
 
@@ -125,7 +125,7 @@ struct PaywallView: View {
                     Text("Just \(product.displayPrice)/month")
                         .font(.title2.bold())
                         .foregroundStyle(.white)
-                        .shadow(radius: 10)
+                        
 
                     Button {
                         Task { await manager.purchase() }
@@ -139,7 +139,7 @@ struct PaywallView: View {
                     }
                     .buttonBorderShape(.capsule)
                     .padding(.horizontal, 24)
-                    .shadow(color: .blue.opacity(0.5), radius: 20, y: 10)
+                    
                     .disabled(manager.isLoading)
 
                     Button("Restore Purchases") {

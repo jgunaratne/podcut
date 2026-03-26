@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Full-screen now-playing view with Liquid Glass controls.
+/// Full-screen now-playing view with playback controls.
 struct NowPlayingView: View {
     @Environment(AudioPlayerManager.self) private var player
     @Environment(\.dismiss) private var dismiss
@@ -29,28 +29,20 @@ struct NowPlayingView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                 default:
-                    // Fallback gradient if no artwork.
-                    LinearGradient(
-                        colors: [
-                            .blue.opacity(0.6),
-                            .cyan.opacity(0.4),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .overlay {
-                        Image(systemName: "waveform")
-                            .font(.system(size: 56, weight: .thin))
-                            .foregroundStyle(.white.opacity(0.7))
-                            .symbolEffect(
-                                .variableColor.iterative,
-                                isActive: player.isPlaying)
-                    }
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.quaternary)
+                        .overlay {
+                            Image(systemName: "waveform")
+                                .font(.system(size: 56, weight: .thin))
+                                .foregroundStyle(.secondary)
+                                .symbolEffect(
+                                    .variableColor.iterative,
+                                    isActive: player.isPlaying)
+                        }
                 }
             }
             .frame(width: 280, height: 280)
             .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
             .scaleEffect(player.isPlaying ? 1.0 : 0.92)
             .animation(.spring(duration: 0.5), value: player.isPlaying)
 
@@ -150,45 +142,32 @@ struct NowPlayingView: View {
                 .frame(height: 20)
 
             // Playback speed control.
-            HStack(spacing: 16) {
-                Menu {
-                    ForEach(availableRates, id: \.self) { rate in
-                        Button {
-                            playbackRate = rate
-                            player.setRate(rate)
-                        } label: {
-                            HStack {
-                                Text(rateLabel(rate))
-                                if rate == playbackRate {
-                                    Image(systemName: "checkmark")
-                                }
+            Menu {
+                ForEach(availableRates, id: \.self) { rate in
+                    Button {
+                        playbackRate = rate
+                        player.setRate(rate)
+                    } label: {
+                        HStack {
+                            Text(rateLabel(rate))
+                            if rate == playbackRate {
+                                Image(systemName: "checkmark")
                             }
                         }
                     }
-                } label: {
-                    Text(rateLabel(playbackRate))
-                        .font(.subheadline.weight(.medium).monospacedDigit())
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(.ultraThinMaterial, in: Capsule())
                 }
+            } label: {
+                Text(rateLabel(playbackRate))
+                    .font(.subheadline.weight(.medium).monospacedDigit())
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .glassEffect(.regular, in: .capsule)
             }
 
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    Color.blue.opacity(0.08),
-                    Color.teal.opacity(0.06),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        )
+        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     private func rateLabel(_ rate: Float) -> String {

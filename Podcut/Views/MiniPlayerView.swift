@@ -34,7 +34,6 @@ struct MiniPlayerView: View {
                             }
                             .frame(width: 46, height: 46)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
 
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(episode.title)
@@ -86,7 +85,7 @@ struct MiniPlayerView: View {
                 .padding(.leading, 10)
                 .padding(.vertical, 8)
 
-                // Progress bar smoothly integrated at the bottom.
+                // Progress bar.
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.blue.opacity(0.15))
@@ -98,9 +97,7 @@ struct MiniPlayerView: View {
                 }
                 .frame(height: 3)
             }
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
+            .glassEffect(.regular.interactive, in: .rect(cornerRadius: 16))
             .padding(.horizontal, 12)
             .padding(.bottom, 6)
             .transition(.move(edge: .bottom).combined(with: .opacity))

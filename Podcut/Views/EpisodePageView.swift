@@ -295,7 +295,7 @@ struct EpisodePageView: View {
                             }
                         }
                         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+                        
                     }
                     .padding(.horizontal)
 
@@ -310,7 +310,7 @@ struct EpisodePageView: View {
                             .textSelection(.enabled)
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
                     }
                     .padding(.horizontal)
 
@@ -419,7 +419,7 @@ struct EpisodePageView: View {
                                 Color(.secondarySystemGroupedBackground),
                                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                             )
-                            .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+                            
                     }
                     .padding(.horizontal)
 
@@ -474,10 +474,7 @@ struct EpisodePageView: View {
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .background(.bar)
-        .overlay(alignment: .top) {
-            Divider()
-        }
+        .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
 
     private func pageTab(icon: String, selectedIcon: String, index: Int) -> some View {

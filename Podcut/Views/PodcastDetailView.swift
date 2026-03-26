@@ -123,7 +123,7 @@ struct PodcastDetailView: View {
                 Text(podcast.collectionName)
                     .font(.title2.bold())
                     .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                    
 
                 Text(podcast.artistName)
                     .font(.subheadline)
@@ -144,15 +144,12 @@ struct PodcastDetailView: View {
                     .foregroundStyle(favorites.isFavorite(podcast) ? .yellow : .white)
                     .symbolEffect(.bounce, value: favorites.isFavorite(podcast))
                     .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .glassEffect(.regular, in: .circle)
             }
         }
         .padding(20)
-        .background(
-            .ultraThinMaterial,
-            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-        )
-        .environment(\.colorScheme, .dark) // Forces the material to be dark glass
+        .glassEffect(.regular, in: .rect(cornerRadius: 24))
+        .environment(\.colorScheme, .dark)
         .padding()
     }
 

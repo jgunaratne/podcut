@@ -89,7 +89,7 @@ struct PodcastChatView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label("Podcast Chat", systemImage: "sparkles.fill")
                     .font(.headline)
-                    .foregroundStyle(.cyan.gradient)
+                    .foregroundStyle(.blue.gradient)
 
                 Text("Ask me anything about this episode. I'll answer based on the transcript.")
                     .font(.subheadline)
@@ -123,8 +123,8 @@ struct PodcastChatView: View {
                 .font(.caption)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.cyan.opacity(0.12), in: Capsule())
-                .foregroundStyle(.cyan)
+                .background(.blue.opacity(0.12), in: Capsule())
+                .foregroundStyle(.blue)
         }
         .buttonStyle(.plain)
     }
@@ -226,7 +226,7 @@ struct PodcastChatView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .glassEffect(.regular, in: .rect)
     }
 
     // MARK: - Send

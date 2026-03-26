@@ -16,13 +16,13 @@ struct SearchView: View {
     /// Popular search terms to seed discovery.
     private let discoverTopics = [
         ("desktopcomputer", "Technology"),
-        ("chart.bar.fill", "Business"),
-        ("theatermasks.fill", "Comedy"),
-        ("flask.fill", "Science"),
-        ("books.vertical.fill", "History"),
+        ("chart.bar", "Business"),
+        ("theatermasks", "Comedy"),
+        ("flask", "Science"),
+        ("books.vertical", "History"),
         ("figure.run", "Health & Fitness"),
         ("music.note", "Music"),
-        ("magnifyingglass.circle.fill", "True Crime"),
+        ("magnifyingglass", "True Crime"),
     ]
 
     var body: some View {
@@ -176,7 +176,7 @@ struct SearchView: View {
                                             }
                                             .frame(width: 150, height: 150)
                                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                            .shadow(color: .black.opacity(0.12), radius: 10, y: 6)
+                                            
 
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(podcast.collectionName)
@@ -262,7 +262,7 @@ struct PodcastRowView: View {
             }
             .frame(width: 64, height: 64)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .shadow(color: .black.opacity(0.08), radius: 6, y: 3)
+            
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(podcast.collectionName)
