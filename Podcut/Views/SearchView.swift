@@ -127,7 +127,7 @@ struct SearchView: View {
                                 HStack(spacing: 10) {
                                     Image(systemName: iconName)
                                         .font(.body)
-                                        .foregroundStyle(.indigo)
+                                        .foregroundStyle(.blue)
                                         .frame(width: 28, height: 28)
                                         
                                     Text(topic)
