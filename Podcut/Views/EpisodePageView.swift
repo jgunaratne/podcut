@@ -234,6 +234,24 @@ struct EpisodePageView: View {
                             Spacer()
 
                             Button {
+                                Task {
+                                    guard let url = episode.audioURL else { return }
+                                    service.transcriptionText = ""
+                                    service.segments = []
+                                    summaryText = ""
+                                    AudioCache.shared.removeCached(for: url)
+                                    let localFile = try await AudioCache.shared.localURL(for: url)
+                                    await service.transcribe(localFileURL: localFile)
+                                    saveToDevice()
+                                }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .disabled(service.isTranscribing)
+
+                            Button {
                                 UIPasteboard.general.string = service.transcriptionText
                             } label: {
                                 Image(systemName: "doc.on.doc")
@@ -363,6 +381,16 @@ struct EpisodePageView: View {
                                 .font(.headline)
 
                             Spacer()
+
+                            Button {
+                                summaryText = ""
+                                Task { await generateSummary() }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .disabled(isSummarizing)
 
                             Button {
                                 UIPasteboard.general.string = summaryText
