@@ -65,7 +65,7 @@ struct FavoritesView: View {
             }
         }
         .listStyle(.plain)
-        .contentMargins(.bottom, 80, for: .scrollContent)
+        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
     }
 
     private func gridView() -> some View {
@@ -87,7 +87,7 @@ struct FavoritesView: View {
             }
             .padding()
         }
-        .contentMargins(.bottom, 80, for: .scrollContent)
+        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
     }
 
     private func layoutPicker() -> some View {

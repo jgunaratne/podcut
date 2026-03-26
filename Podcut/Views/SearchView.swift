@@ -15,14 +15,14 @@ struct SearchView: View {
 
     /// Popular search terms to seed discovery.
     private let discoverTopics = [
-        ("cpu", "Technology"),
+        ("desktopcomputer", "Technology"),
         ("chart.bar.fill", "Business"),
         ("theatermasks.fill", "Comedy"),
         ("flask.fill", "Science"),
         ("books.vertical.fill", "History"),
         ("figure.run", "Health & Fitness"),
         ("music.note", "Music"),
-        ("fingerprint", "True Crime"),
+        ("magnifyingglass.circle.fill", "True Crime"),
     ]
 
     var body: some View {
@@ -54,7 +54,7 @@ struct SearchView: View {
                         }
                     }
                     .listStyle(.plain)
-                    .contentMargins(.bottom, 80, for: .scrollContent)
+                    .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
                 }
             }
             .navigationTitle("Search")
@@ -124,22 +124,22 @@ struct SearchView: View {
                                 query = topic
                                 debouncedQuery = topic
                             } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: 10) {
                                     Image(systemName: iconName)
-                                        .font(.title3)
-                                        .foregroundStyle(.blue)
-                                        .frame(width: 24)
+                                        .font(.body)
+                                        .foregroundStyle(.indigo)
+                                        .frame(width: 28, height: 28)
                                         
                                     Text(topic)
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(.primary)
                                         .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
                                     Spacer()
                                 }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 10)
-                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+                                .padding(.horizontal, 12)
+                                .frame(height: 52)
+                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
                             .buttonStyle(.plain)
                         }
@@ -205,7 +205,7 @@ struct SearchView: View {
             }
             .padding(.top, 8)
         }
-        .contentMargins(.bottom, 80, for: .scrollContent)
+        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
     }
 
     // MARK: - Network

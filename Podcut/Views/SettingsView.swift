@@ -151,7 +151,7 @@ struct SettingsView: View {
                 #endif
                 
             }
-            .contentMargins(.bottom, 80, for: .scrollContent)
+            .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
             .navigationTitle("Settings")
             .alert("Clear Audio Cache?", isPresented: $showClearCacheAlert) {
                 Button("Cancel", role: .cancel) {}
