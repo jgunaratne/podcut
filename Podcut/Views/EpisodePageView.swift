@@ -228,7 +228,7 @@ struct EpisodePageView: View {
                 if !service.segments.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Label("Transcription", systemImage: "text.quote")
+                            Text("Transcription")
                                 .font(.headline)
 
                             Spacer()
@@ -305,7 +305,7 @@ struct EpisodePageView: View {
                 } else if !service.transcriptionText.isEmpty {
                     // Fallback for legacy data without segments.
                     VStack(alignment: .leading, spacing: 10) {
-                        Label("Transcription", systemImage: "text.quote")
+                        Text("Transcription")
                             .font(.headline)
 
                         Text(service.transcriptionText)
