@@ -67,6 +67,7 @@ struct MiniPlayerView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
 
                     // Skip forward button.
                     Button {
@@ -79,6 +80,7 @@ struct MiniPlayerView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Skip forward 30 seconds")
                     .padding(.trailing, 4)
                 }
                 .padding(.leading, 10)

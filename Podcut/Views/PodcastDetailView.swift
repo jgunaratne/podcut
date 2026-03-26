@@ -166,9 +166,34 @@ struct PodcastDetailView: View {
                 .padding(.vertical, 10)
             
             if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding(40)
+                VStack(spacing: 0) {
+                    ForEach(0..<5, id: \.self) { _ in
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 44, height: 44)
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color(.systemGray5))
+                                    .frame(height: 14)
+                                    .frame(maxWidth: .infinity)
+
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color(.systemGray6))
+                                    .frame(width: 120, height: 10)
+                            }
+
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 14)
+
+                        Divider().padding(.leading, 76)
+                    }
+                }
+                .redacted(reason: .placeholder)
+                .shimmer()
             } else if let error = errorMessage {
                 ContentUnavailableView(
                     "Unable to Load Episodes",

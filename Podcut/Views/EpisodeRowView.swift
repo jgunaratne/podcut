@@ -89,5 +89,8 @@ struct EpisodeRowView: View {
             Divider()
                 .padding(.leading, 76)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(episode.title). \(episode.pubDate). \(episode.duration)")
+        .accessibilityHint(isCurrentlyPlaying ? "Currently playing. Tap to pause." : "Tap to play.")
     }
 }

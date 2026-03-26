@@ -117,6 +117,7 @@ struct NowPlayingView: View {
                     Image(systemName: "gobackward.15")
                         .font(.title2)
                 }
+                .accessibilityLabel("Skip back 15 seconds")
 
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -129,6 +130,7 @@ struct NowPlayingView: View {
                     .font(.system(size: 60))
                     .contentTransition(.symbolEffect(.replace))
                 }
+                .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -137,6 +139,7 @@ struct NowPlayingView: View {
                     Image(systemName: "goforward.30")
                         .font(.title2)
                 }
+                .accessibilityLabel("Skip forward 30 seconds")
             }
             .foregroundStyle(.primary)
             .padding(.horizontal, 32)

@@ -5,14 +5,23 @@ import Foundation
 struct GeminiService {
     /// Summarize the given podcast transcript using Gemini 2.5 Flash Lite via Firebase AI.
     /// Accepts timestamped segments so the summary can include timecodes.
+    /// Maximum transcript characters to send to Gemini (roughly 200k tokens).
+    private static let maxTranscriptLength = 500_000
+
     static func summarize(segments: [TranscriptionSegment]) async throws -> String {
         let model = FirebaseAI.firebaseAI(backend: .googleAI())
             .generativeModel(modelName: "gemini-2.5-flash-lite")
 
         // Build a timestamped transcript for the prompt.
-        let timestampedTranscript = segments.map { segment in
+        var timestampedTranscript = segments.map { segment in
             "[\(segment.formattedTime)] \(segment.text)"
         }.joined(separator: "\n")
+
+        // Truncate very long transcripts to avoid exceeding context window.
+        if timestampedTranscript.count > maxTranscriptLength {
+            timestampedTranscript = String(timestampedTranscript.prefix(maxTranscriptLength))
+                + "\n\n[Transcript truncated — episode too long for full analysis]"
+        }
 
         let prompt = """
             You are an expert podcast analyst. Summarize the following timestamped podcast \
@@ -52,13 +61,17 @@ struct GeminiService {
         let model = FirebaseAI.firebaseAI(backend: .googleAI())
             .generativeModel(modelName: "gemini-2.5-flash-lite")
 
+        let safeTranscript = transcript.count > maxTranscriptLength
+            ? String(transcript.prefix(maxTranscriptLength)) + "\n\n[Transcript truncated]"
+            : transcript
+
         let prompt = """
             You are an expert podcast analyst. Summarize the following podcast transcript into \
             a concise, well-structured summary. Include the key topics discussed, main takeaways, \
             and any notable quotes or insights. Use bullet points for clarity.
 
             TRANSCRIPT:
-            \(transcript)
+            \(safeTranscript)
             """
 
         do {
@@ -95,7 +108,7 @@ struct GeminiService {
             Use timecodes from the transcript in your answer when applicable.
 
             PODCAST TRANSCRIPT:
-            \(transcript)
+            \(transcript.count > maxTranscriptLength ? String(transcript.prefix(maxTranscriptLength)) + "\n[Truncated]" : transcript)
 
             \(historyText.isEmpty ? "" : "CONVERSATION HISTORY:\n\(historyText)\n")
             USER QUESTION: \(question)
@@ -116,13 +129,25 @@ struct GeminiService {
 enum GeminiError: LocalizedError {
     case emptyResponse
     case firebaseAI(detail: String)
+    case timeout
+    case noConnection
 
     var errorDescription: String? {
         switch self {
         case .emptyResponse:
-            return "Gemini returned an empty response."
+            return "AI returned an empty response. Please try again."
         case .firebaseAI(let detail):
-            return "Gemini error: \(detail)"
+            if detail.lowercased().contains("quota") || detail.lowercased().contains("rate") {
+                return "AI service is temporarily busy. Please wait a moment and try again."
+            }
+            if detail.lowercased().contains("network") || detail.lowercased().contains("offline") {
+                return "No internet connection. Connect to the internet and try again."
+            }
+            return "AI service error. Please try again later."
+        case .timeout:
+            return "Request timed out. The episode may be too long — try a shorter one."
+        case .noConnection:
+            return "No internet connection. Connect to the internet to use AI features."
         }
     }
 }
