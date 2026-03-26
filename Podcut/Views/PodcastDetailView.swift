@@ -41,9 +41,9 @@ struct PodcastDetailView: View {
                 episodesSection
             }
         }
+        .contentMargins(.bottom, 80, for: .scrollContent)
         .navigationTitle(headerVisible ? "" : podcast.collectionName)
         .navigationBarTitleDisplayMode(.inline)
-        
         .ignoresSafeArea(edges: .top)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

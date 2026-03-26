@@ -63,14 +63,9 @@ struct FavoritesView: View {
                     favorites.toggle(favorites.podcasts[index])
                 }
             }
-            
-            if player.currentEpisode != nil {
-                Color.clear.frame(height: 75)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-            }
         }
         .listStyle(.plain)
+        .contentMargins(.bottom, 80, for: .scrollContent)
     }
 
     private func gridView() -> some View {
@@ -91,11 +86,8 @@ struct FavoritesView: View {
                 }
             }
             .padding()
-            
-            if player.currentEpisode != nil {
-                Color.clear.frame(height: 75)
-            }
         }
+        .contentMargins(.bottom, 80, for: .scrollContent)
     }
 
     private func layoutPicker() -> some View {

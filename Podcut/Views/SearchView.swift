@@ -52,15 +52,9 @@ struct SearchView: View {
                             }
                             .listRowSeparator(.hidden)
                         }
-                        
-                        // Invisible padding element to push content above the mini player
-                        if player.currentEpisode != nil {
-                            Color.clear.frame(height: 75)
-                                .listRowSeparator(.hidden)
-                                .listRowBackground(Color.clear)
-                        }
                     }
                     .listStyle(.plain)
+                    .contentMargins(.bottom, 80, for: .scrollContent)
                 }
             }
             .navigationTitle("Search")
@@ -207,10 +201,11 @@ struct SearchView: View {
                     }
                 }
 
-                Spacer(minLength: player.currentEpisode != nil ? 100 : 40)
+                Spacer(minLength: 20)
             }
             .padding(.top, 8)
         }
+        .contentMargins(.bottom, 80, for: .scrollContent)
     }
 
     // MARK: - Network

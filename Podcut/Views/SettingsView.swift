@@ -3,8 +3,7 @@ import SwiftData
 
 /// App settings screen with cache management, playback defaults, and account info.
 struct SettingsView: View {
-    @Environment(AudioPlayerManager.self) private var player
-    @Environment(\.modelContext) private var modelContext
+        @Environment(\.modelContext) private var modelContext
     @State private var audioCacheSize: String = "Calculating…"
     @State private var transcriptionCount: Int = 0
     @State private var defaultPlaybackRate: Float = 1.0
@@ -151,12 +150,8 @@ struct SettingsView: View {
                 }
                 #endif
                 
-                if player.currentEpisode != nil {
-                    Color.clear.frame(height: 75)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
             }
+            .contentMargins(.bottom, 80, for: .scrollContent)
             .navigationTitle("Settings")
             .alert("Clear Audio Cache?", isPresented: $showClearCacheAlert) {
                 Button("Cancel", role: .cancel) {}
