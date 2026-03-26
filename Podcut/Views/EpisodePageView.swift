@@ -42,7 +42,13 @@ struct EpisodePageView: View {
         .animation(.easeInOut(duration: 0.3), value: currentPage)
         .safeAreaInset(edge: .bottom) {
             // Page indicator overlays the bottom — content scrolls under it.
-            pageIndicator
+            // Add extra padding when mini player is visible so tabs aren't hidden behind it.
+            VStack(spacing: 0) {
+                pageIndicator
+                if player.currentEpisode != nil {
+                    Color.clear.frame(height: 64)
+                }
+            }
         }
         
         .navigationTitle(episode.title)
