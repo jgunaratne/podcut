@@ -223,15 +223,18 @@ struct SearchView: View {
     }
 
     private func loadTrending() async {
-        // Use the iTunes top podcasts feed or a generic popular search.
         do {
-            trendingPodcasts = try await service.search(query: "top podcasts 2026")
-            // Keep only a reasonable number for the carousel.
-            if trendingPodcasts.count > 12 {
-                trendingPodcasts = Array(trendingPodcasts.prefix(12))
-            }
+            trendingPodcasts = try await service.fetchTopPodcasts(limit: 12)
         } catch {
-            // Non-critical — just show no trending section.
+            // Fallback to search if the RSS feed fails.
+            do {
+                trendingPodcasts = try await service.search(query: "popular podcasts")
+                if trendingPodcasts.count > 12 {
+                    trendingPodcasts = Array(trendingPodcasts.prefix(12))
+                }
+            } catch {
+                // Non-critical — just show no trending section.
+            }
         }
     }
 }

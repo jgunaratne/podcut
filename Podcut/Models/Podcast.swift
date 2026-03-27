@@ -12,6 +12,19 @@ struct Podcast: Codable, Identifiable, Hashable {
     let primaryGenreName: String?
     let releaseDate: String?
 
+    /// Manual initializer for creating Podcast from non-iTunes sources.
+    init(id: Int, collectionName: String, artistName: String, artworkUrl600: String, artworkUrl100: String, feedUrl: String? = nil, trackCount: Int? = nil, primaryGenreName: String? = nil, releaseDate: String? = nil) {
+        self.id = id
+        self.collectionName = collectionName
+        self.artistName = artistName
+        self.artworkUrl600 = artworkUrl600
+        self.artworkUrl100 = artworkUrl100
+        self.feedUrl = feedUrl
+        self.trackCount = trackCount
+        self.primaryGenreName = primaryGenreName
+        self.releaseDate = releaseDate
+    }
+
     enum CodingKeys: String, CodingKey {
         case id = "collectionId"
         case collectionName
