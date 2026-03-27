@@ -189,7 +189,7 @@ struct NowPlayingView: View {
             .background(Color(.systemBackground).ignoresSafeArea())
             .navigationDestination(isPresented: $showEpisodePage) {
                 if let episode = player.currentEpisode {
-                    EpisodePageView(episode: episode)
+                    EpisodePageView(episode: episode, inlineWithMiniPlayer: false)
                 }
             }
         }

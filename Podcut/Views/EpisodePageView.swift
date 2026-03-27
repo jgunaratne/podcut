@@ -4,6 +4,8 @@ import SwiftUI
 /// A swipeable page view for an episode: Detail → Transcription → Summary → Chat.
 struct EpisodePageView: View {
     let episode: Episode
+    /// When true, adds extra bottom padding to clear the mini player.
+    var inlineWithMiniPlayer: Bool = true
     @State private var currentPage = 0
     @Namespace private var tabs
     @State private var service = TranscriptionService()
@@ -41,7 +43,13 @@ struct EpisodePageView: View {
         .tabViewStyle(.page(indexDisplayMode: .never))
         .animation(.easeInOut(duration: 0.3), value: currentPage)
         .safeAreaInset(edge: .bottom) {
-            pageIndicator
+            VStack(spacing: 0) {
+                pageIndicator
+                // When shown inline (main nav), add clearance for the mini player.
+                if inlineWithMiniPlayer && player.currentEpisode != nil {
+                    Color.clear.frame(height: 64)
+                }
+            }
         }
         
         .navigationTitle(episode.title)
