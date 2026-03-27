@@ -154,6 +154,22 @@ final class TranscriptionService {
             // 7. Finalize the analyzer.
             try await analyzer.finalizeAndFinishThroughEndOfInput()
 
+            // Deduplicate: merge segments that are exact duplicates or near-duplicates.
+            var deduplicated: [TranscriptionSegment] = []
+            for segment in segments {
+                if let last = deduplicated.last {
+                    // If the last segment's text is repeated, skip this one.
+                    if segment.text == last.text { continue }
+                    // If this segment contains the previous text, replace it.
+                    if segment.text.contains(last.text) {
+                        deduplicated[deduplicated.count - 1] = segment
+                        continue
+                    }
+                }
+                deduplicated.append(segment)
+            }
+            segments = deduplicated
+
             // Rebuild clean transcript from segments.
             transcriptionText = segments.map(\.text).joined(separator: " ")
 
