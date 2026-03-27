@@ -133,7 +133,6 @@ struct SearchView: View {
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(.primary)
                                         .lineLimit(1)
-                                        .minimumScaleFactor(0.8)
                                     Spacer()
                                 }
                                 .padding(.horizontal, 12)
