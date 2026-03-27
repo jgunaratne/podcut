@@ -12,16 +12,16 @@ struct SearchView: View {
 
     private let service = PodcastSearchService()
 
-    /// Popular search terms to seed discovery.
-    private let discoverTopics = [
-        ("desktopcomputer", "Technology"),
-        ("chart.bar", "Business"),
-        ("theatermasks", "Comedy"),
-        ("flask", "Science"),
-        ("books.vertical", "History"),
-        ("figure.run", "Health & Fitness"),
-        ("music.note", "Music"),
-        ("magnifyingglass", "True Crime"),
+    /// Category topics with SF Symbols and accent colors.
+    private let categories: [(icon: String, name: String, color: Color)] = [
+        ("desktopcomputer", "Technology", .blue),
+        ("chart.bar", "Business", .green),
+        ("theatermasks", "Comedy", .orange),
+        ("flask", "Science", .purple),
+        ("books.vertical", "History", .brown),
+        ("figure.run", "Health", .pink),
+        ("music.note", "Music", .red),
+        ("magnifyingglass", "True Crime", .indigo),
     ]
 
     var body: some View {
@@ -34,7 +34,6 @@ struct SearchView: View {
                         description: Text(error)
                     )
                 } else if results.isEmpty && !isSearching && query.isEmpty {
-                    // Discovery view when no search is active.
                     discoverView
                 } else if results.isEmpty && !isSearching {
                     ContentUnavailableView(
@@ -66,7 +65,6 @@ struct SearchView: View {
                 debouncedQuery = query
             }
             .task(id: query) {
-                // Debounce: wait before updating debouncedQuery.
                 if query.isEmpty {
                     debouncedQuery = ""
                     results = []
@@ -78,12 +76,10 @@ struct SearchView: View {
                 debouncedQuery = query
             }
             .task(id: debouncedQuery) {
-                // Only perform network call when debounced query changes.
                 guard !debouncedQuery.isEmpty else { return }
                 await performSearch(debouncedQuery)
             }
             .task {
-                // Load trending podcasts on first appear.
                 if trendingPodcasts.isEmpty {
                     await loadTrending()
                 }
@@ -104,59 +100,112 @@ struct SearchView: View {
 
     private var discoverView: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Browse by category.
-                VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 28) {
+
+                // MARK: Hero — Featured podcast (first trending)
+                if let featured = trendingPodcasts.first {
+                    NavigationLink(value: featured) {
+                        ZStack(alignment: .bottomLeading) {
+                            AsyncImage(url: URL(string: featured.artworkUrl600)) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                default:
+                                    Rectangle()
+                                        .fill(.quaternary)
+                                }
+                            }
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+
+                            // Glass overlay with podcast info.
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("#1 Trending")
+                                    .font(.caption.weight(.bold))
+                                    .textCase(.uppercase)
+                                    .foregroundStyle(.blue)
+
+                                Text(featured.collectionName)
+                                    .font(.title3.bold())
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+
+                                Text(featured.artistName)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal)
+                }
+
+                // MARK: Categories
+                VStack(alignment: .leading, spacing: 14) {
                     Text("Browse")
                         .font(.title2.bold())
                         .padding(.horizontal)
 
-                    LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(), spacing: 10),
-                            GridItem(.flexible(), spacing: 10),
-                        ],
-                        spacing: 10
-                    ) {
-                        ForEach(discoverTopics, id: \.1) { iconName, topic in
-                            Button {
-                                query = topic
-                                debouncedQuery = topic
-                            } label: {
-                                HStack(spacing: 10) {
-                                    Image(systemName: iconName)
-                                        .font(.body)
-                                        .foregroundStyle(.blue)
-                                        .frame(width: 28, height: 28)
-                                        
-                                    Text(topic)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(1)
-                                    Spacer()
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 12) {
+                            ForEach(categories, id: \.name) { category in
+                                Button {
+                                    query = category.name
+                                    debouncedQuery = category.name
+                                } label: {
+                                    VStack(spacing: 8) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .fill(category.color.opacity(0.12))
+                                                .frame(width: 64, height: 64)
+
+                                            Image(systemName: category.icon)
+                                                .font(.title2)
+                                                .foregroundStyle(category.color)
+                                        }
+
+                                        Text(category.name)
+                                            .font(.caption.weight(.medium))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(1)
+                                    }
+                                    .frame(width: 80)
                                 }
-                                .padding(.horizontal, 12)
-                                .frame(height: 52)
-                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
 
-                // Trending section.
-                if !trendingPodcasts.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Trending Podcasts")
-                            .font(.title2.bold())
-                            .padding(.horizontal)
+                // MARK: Trending Grid
+                if trendingPodcasts.count > 1 {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Text("Top Charts")
+                                .font(.title2.bold())
+                            Spacer()
+                        }
+                        .padding(.horizontal)
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            LazyHStack(spacing: 16) {
-                                ForEach(trendingPodcasts) { podcast in
-                                    NavigationLink(value: podcast) {
-                                        VStack(alignment: .leading, spacing: 10) {
+                        // Two-column grid for the rest of trending.
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.flexible(), spacing: 16),
+                                GridItem(.flexible(), spacing: 16),
+                            ],
+                            spacing: 20
+                        ) {
+                            ForEach(Array(trendingPodcasts.dropFirst().enumerated()), id: \.element.id) { index, podcast in
+                                NavigationLink(value: podcast) {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        ZStack(alignment: .topLeading) {
                                             AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
                                                 switch phase {
                                                 case .success(let image):
@@ -167,35 +216,41 @@ struct SearchView: View {
                                                     RoundedRectangle(cornerRadius: 16)
                                                         .fill(.quaternary)
                                                         .overlay {
-                                                            Image(systemName: "mic.fill")
+                                                            Image(systemName: "waveform")
                                                                 .foregroundStyle(.secondary)
                                                         }
                                                 }
                                             }
-                                            .frame(width: 150, height: 150)
+                                            .frame(minHeight: 160)
                                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                            
 
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(podcast.collectionName)
-                                                    .font(.subheadline.weight(.semibold))
-                                                    .lineLimit(2)
-                                                    .foregroundStyle(.primary)
-
-                                                Text(podcast.artistName)
-                                                    .font(.caption)
-                                                    .lineLimit(1)
-                                                    .foregroundStyle(.secondary)
-                                            }
+                                            // Rank badge.
+                                            Text("#\(index + 2)")
+                                                .font(.caption2.bold().monospacedDigit())
+                                                .foregroundStyle(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(.black.opacity(0.5), in: Capsule())
+                                                .padding(8)
                                         }
-                                        .frame(width: 150)
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(podcast.collectionName)
+                                                .font(.subheadline.weight(.semibold))
+                                                .lineLimit(2)
+                                                .foregroundStyle(.primary)
+
+                                            Text(podcast.artistName)
+                                                .font(.caption)
+                                                .lineLimit(1)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
-                                    .buttonStyle(.plain)
                                 }
+                                .buttonStyle(.plain)
                             }
-                            .padding(.horizontal)
-                            .padding(.bottom, 20)
                         }
+                        .padding(.horizontal)
                     }
                 }
 
@@ -226,26 +281,25 @@ struct SearchView: View {
         do {
             trendingPodcasts = try await service.fetchTopPodcasts(limit: 12)
         } catch {
-            // Fallback to search if the RSS feed fails.
             do {
                 trendingPodcasts = try await service.search(query: "popular podcasts")
                 if trendingPodcasts.count > 12 {
                     trendingPodcasts = Array(trendingPodcasts.prefix(12))
                 }
             } catch {
-                // Non-critical — just show no trending section.
+                // Non-critical.
             }
         }
     }
 }
 
-/// A single row in the podcast search results list.
+// MARK: - Podcast Row
+
 struct PodcastRowView: View {
     let podcast: Podcast
 
     var body: some View {
         HStack(spacing: 16) {
-            // Use smaller artwork (100px) for list rows instead of 600px.
             AsyncImage(url: URL(string: podcast.artworkUrl100)) { phase in
                 switch phase {
                 case .success(let image):
@@ -256,14 +310,13 @@ struct PodcastRowView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.quaternary)
                         .overlay {
-                            Image(systemName: "mic.fill")
+                            Image(systemName: "waveform")
                                 .foregroundStyle(.secondary)
                         }
                 }
             }
             .frame(width: 64, height: 64)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(podcast.collectionName)
@@ -291,4 +344,3 @@ struct PodcastRowView: View {
         .contentShape(Rectangle())
     }
 }
-
