@@ -159,19 +159,43 @@ struct EpisodePageView: View {
                         player.play(episode: episode)
                     }
                 } label: {
-                    Label(
-                        player.currentEpisode?.id == episode.id && player.isPlaying
-                            ? "Pause" : "Play Episode",
-                        systemImage: player.currentEpisode?.id == episode.id && player.isPlaying
-                            ? "pause.circle.fill" : "play.circle.fill"
-                    )
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+                    if player.currentEpisode?.id == episode.id && player.isLoading {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Loading…")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                    } else {
+                        Label(
+                            player.currentEpisode?.id == episode.id && player.isPlaying
+                                ? "Pause" : "Play Episode",
+                            systemImage: player.currentEpisode?.id == episode.id && player.isPlaying
+                                ? "pause.circle.fill" : "play.circle.fill"
+                        )
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
+                .disabled(player.currentEpisode?.id == episode.id && player.isLoading)
                 .padding(.horizontal, 24)
+
+                // Playback error.
+                if let error = player.errorMessage,
+                   player.currentEpisode == nil || player.currentEpisode?.id == episode.id {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle")
+                        Text(error)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 24)
+                }
 
                 // Description.
                 if !episode.description.isEmpty {

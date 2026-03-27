@@ -52,21 +52,26 @@ struct MiniPlayerView: View {
                     Spacer(minLength: 4)
 
                     // Play/Pause button.
-                    Button {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        player.togglePlayPause()
-                    } label: {
-                        Image(
-                            systemName: player.isPlaying
-                                ? "pause.fill" : "play.fill"
-                        )
-                        .font(.title2)
-                        .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    if player.isLoading {
+                        ProgressView()
+                            .frame(width: 44, height: 44)
+                    } else {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            player.togglePlayPause()
+                        } label: {
+                            Image(
+                                systemName: player.isPlaying
+                                    ? "pause.fill" : "play.fill"
+                            )
+                            .font(.title2)
+                            .contentTransition(.symbolEffect(.replace))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
 
                     // Skip forward button.
                     Button {

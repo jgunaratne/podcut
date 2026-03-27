@@ -26,13 +26,18 @@ struct EpisodeRowView: View {
                             .fill(isCurrentlyPlaying ? Color.blue.opacity(0.15) : Color(.systemGray5))
                             .frame(width: 48, height: 48)
 
-                        Image(
-                            systemName: isCurrentlyPlaying && player.isPlaying
-                                ? "pause.fill" : "play.fill"
-                        )
-                        .font(.title3)
-                        .foregroundStyle(isCurrentlyPlaying ? .blue : .primary)
-                        .contentTransition(.symbolEffect(.replace))
+                        if isCurrentlyPlaying && player.isLoading {
+                            ProgressView()
+                                .tint(.blue)
+                        } else {
+                            Image(
+                                systemName: isCurrentlyPlaying && player.isPlaying
+                                    ? "pause.fill" : "play.fill"
+                            )
+                            .font(.title3)
+                            .foregroundStyle(isCurrentlyPlaying ? .blue : .primary)
+                            .contentTransition(.symbolEffect(.replace))
+                        }
                     }
                     .symbolEffect(.pulse, isActive: isCurrentlyPlaying && player.isPlaying)
                 }

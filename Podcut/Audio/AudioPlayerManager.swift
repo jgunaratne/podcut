@@ -9,6 +9,8 @@ final class AudioPlayerManager {
     var isPlaying = false
     var currentTime: TimeInterval = 0
     var duration: TimeInterval = 0
+    var errorMessage: String?
+    var isLoading = false
 
     var playbackProgress: Double {
         guard duration > 0 else { return 0 }
@@ -34,7 +36,7 @@ final class AudioPlayerManager {
 
     func play(episode: Episode) {
         guard let url = episode.audioURL else {
-            print("No audio URL for episode: \(episode.title)")
+            errorMessage = "This episode has no audio URL."
             return
         }
 
@@ -53,8 +55,9 @@ final class AudioPlayerManager {
         player = nil
         currentEpisode = episode
         isPlaying = false
+        errorMessage = nil
+        isLoading = true
 
-        // Download (or use cached) audio, then play from the local file.
         loadTask = Task { @MainActor in
             do {
                 let localURL = try await AudioCache.shared.localURL(for: url)
@@ -64,30 +67,33 @@ final class AudioPlayerManager {
                 let avPlayer = AVPlayer(playerItem: playerItem)
                 self.player = avPlayer
 
-                // Use KVO to wait for readyToPlay instead of polling.
-                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    // If already ready (cached local file), continue immediately.
-                    if playerItem.status == .readyToPlay {
-                        continuation.resume()
-                        return
-                    }
-                    if playerItem.status == .failed {
-                        continuation.resume()
+                // Wait for readyToPlay via KVO.
+                let status = await withCheckedContinuation { (continuation: CheckedContinuation<AVPlayerItem.Status, Never>) in
+                    // Check if already resolved before observing.
+                    if playerItem.status != .unknown {
+                        continuation.resume(returning: playerItem.status)
                         return
                     }
 
-                    self.statusObservation = playerItem.observe(\.status, options: [.new]) { _, _ in
-                        continuation.resume()
+                    var resumed = false
+                    self.statusObservation = playerItem.observe(\.status, options: [.new]) { item, _ in
+                        guard !resumed else { return }
+                        if item.status != .unknown {
+                            resumed = true
+                            continuation.resume(returning: item.status)
+                        }
                     }
                 }
 
                 self.statusObservation?.invalidate()
                 self.statusObservation = nil
+                self.isLoading = false
 
                 guard !Task.isCancelled else { return }
 
-                guard playerItem.status == .readyToPlay else {
-                    print("Player item failed: \(playerItem.error?.localizedDescription ?? "unknown")")
+                guard status == .readyToPlay else {
+                    let desc = playerItem.error?.localizedDescription ?? "Unknown playback error"
+                    self.errorMessage = "Can't play: \(desc)"
                     self.currentEpisode = nil
                     return
                 }
@@ -102,11 +108,14 @@ final class AudioPlayerManager {
                 self.addTimeObserver()
                 self.observeDuration(of: playerItem)
                 self.updateNowPlayingInfo()
+            } catch is CancellationError {
+                self.isLoading = false
             } catch {
                 if !Task.isCancelled {
-                    print("Failed to download audio: \(error)")
+                    self.errorMessage = error.localizedDescription
                     self.currentEpisode = nil
                     self.isPlaying = false
+                    self.isLoading = false
                 }
             }
         }
@@ -131,6 +140,7 @@ final class AudioPlayerManager {
         }
         player.play()
         isPlaying = true
+        errorMessage = nil
         updateNowPlayingInfo()
     }
 
