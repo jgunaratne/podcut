@@ -124,7 +124,6 @@ struct GeminiService {
             throw GeminiError.firebaseAI(detail: String(describing: error))
         }
     }
-}
 
     /// Generate contextual suggested questions based on the transcript.
     static func suggestQuestions(transcript: String) async throws -> [String] {
