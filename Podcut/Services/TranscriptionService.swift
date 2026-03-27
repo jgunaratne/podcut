@@ -113,18 +113,42 @@ final class TranscriptionService {
                 }
             )
 
-            // 6. Collect results, capturing the current stable time for each.
+            // 6. Collect results, deduplicating refined segments.
+            //    The transcriber may emit updated results for the same audio region.
+            //    If a new result overlaps the previous segment's timestamp (within 2s)
+            //    and the previous text is a prefix of the new text, replace it.
             for try await result in transcriber.results {
                 let text = String(result.text.characters)
-                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                else { continue }
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !text.isEmpty else { continue }
+
+                let currentTimestamp = stableTime
+
+                // Check if this is a refinement of the last segment.
+                if let last = segments.last {
+                    let timeDelta = abs(currentTimestamp - last.timestamp)
+                    let isRefinement = timeDelta < 2.0 && (
+                        text.hasPrefix(last.text) ||
+                        last.text.hasPrefix(text) ||
+                        text == last.text
+                    )
+
+                    if isRefinement {
+                        // Replace the last segment with the longer/refined version.
+                        let refined = text.count >= last.text.count ? text : last.text
+                        segments[segments.count - 1] = TranscriptionSegment(
+                            timestamp: last.timestamp,
+                            text: refined
+                        )
+                        continue
+                    }
+                }
 
                 let segment = TranscriptionSegment(
-                    timestamp: stableTime,
+                    timestamp: currentTimestamp,
                     text: text
                 )
                 segments.append(segment)
-                transcriptionText += text + " "
             }
 
             // 7. Finalize the analyzer.
