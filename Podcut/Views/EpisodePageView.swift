@@ -41,14 +41,7 @@ struct EpisodePageView: View {
         .tabViewStyle(.page(indexDisplayMode: .never))
         .animation(.easeInOut(duration: 0.3), value: currentPage)
         .safeAreaInset(edge: .bottom) {
-            // Page indicator overlays the bottom — content scrolls under it.
-            // Add extra padding when mini player is visible so tabs aren't hidden behind it.
-            VStack(spacing: 0) {
-                pageIndicator
-                if player.currentEpisode != nil {
-                    Color.clear.frame(height: 64)
-                }
-            }
+            pageIndicator
         }
         
         .navigationTitle(episode.title)
@@ -205,6 +198,8 @@ struct EpisodePageView: View {
                     .padding(.horizontal)
                 }
 
+                Spacer(minLength: 40)
+
                 // Hint to swipe.
                 HStack(spacing: 6) {
                     Image(systemName: "hand.draw")
@@ -215,9 +210,9 @@ struct EpisodePageView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 30)
+                .padding(.bottom, 16)
             }
-            .padding(.top, 20)
+            .padding(.top, 16)
         }
     }
 
@@ -504,9 +499,8 @@ struct EpisodePageView: View {
             pageTab(icon: "bubble.left.and.text.bubble.right", selectedIcon: "bubble.left.and.text.bubble.right.fill", index: 3)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .padding(.vertical, 10)
+        .background(.bar)
     }
 
     private func pageTab(icon: String, selectedIcon: String, index: Int) -> some View {
