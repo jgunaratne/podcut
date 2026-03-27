@@ -38,11 +38,21 @@ final class TranscriptionService {
         progress = "Preparing…"
 
         // Keep the app alive in the background during transcription.
+        // Use both UIBackgroundTask (short) and ProcessInfo extended execution (long).
         var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
         backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "Transcription") {
             UIApplication.shared.endBackgroundTask(backgroundTaskID)
             backgroundTaskID = .invalid
         }
+
+        // Request extended background execution for long transcriptions.
+        let processInfo = ProcessInfo.processInfo
+        processInfo.performExpiringActivity(withReason: "Podcast transcription in progress") { expired in
+            if expired {
+                // System is reclaiming — nothing we can do, the task will resume next launch.
+            }
+        }
+
         defer {
             if backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(backgroundTaskID)
