@@ -307,7 +307,7 @@ struct PodcastRowView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 default:
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 16)
                         .fill(.quaternary)
                         .overlay {
                             Image(systemName: "waveform")
@@ -316,7 +316,7 @@ struct PodcastRowView: View {
                 }
             }
             .frame(width: 64, height: 64)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(podcast.collectionName)

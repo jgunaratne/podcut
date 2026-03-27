@@ -63,7 +63,7 @@ struct PrivacyPolicyView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
         .navigationTitle("Privacy Policy")
@@ -130,7 +130,7 @@ struct TermsOfServiceView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
         .navigationTitle("Terms of Service")

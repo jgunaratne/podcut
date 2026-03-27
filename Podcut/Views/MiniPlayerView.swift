@@ -22,7 +22,7 @@ struct MiniPlayerView: View {
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                 default:
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: 8)
                                         .fill(.quaternary)
                                         .overlay {
                                             Image(systemName: "waveform")
@@ -33,7 +33,7 @@ struct MiniPlayerView: View {
                                 }
                             }
                             .frame(width: 46, height: 46)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(episode.title)

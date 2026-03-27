@@ -31,7 +31,7 @@ struct NowPlayingView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                     default:
-                        RoundedRectangle(cornerRadius: 24)
+                        RoundedRectangle(cornerRadius: 16)
                             .fill(.quaternary)
                             .overlay {
                                 Image(systemName: "waveform")
@@ -44,7 +44,7 @@ struct NowPlayingView: View {
                     }
                 }
                 .frame(width: 280, height: 280)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .scaleEffect(player.isPlaying ? 1.0 : 0.92)
                 .animation(.spring(duration: 0.5), value: player.isPlaying)
 

@@ -21,7 +21,7 @@ struct ContentView: View {
                 SearchView()
             }
 
-            Tab("Favorites", systemImage: "star.fill", value: 1) {
+            Tab("Favorites", systemImage: "star", value: 1) {
                 FavoritesView()
             }
 

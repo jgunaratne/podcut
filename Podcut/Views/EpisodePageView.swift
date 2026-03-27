@@ -333,7 +333,7 @@ struct EpisodePageView: View {
                             .textSelection(.enabled)
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .padding(.horizontal)
 

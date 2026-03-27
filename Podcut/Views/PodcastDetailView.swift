@@ -148,7 +148,7 @@ struct PodcastDetailView: View {
             }
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 24))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
         .environment(\.colorScheme, .dark)
         .padding()
     }
@@ -171,12 +171,12 @@ struct PodcastDetailView: View {
                                 .frame(width: 44, height: 44)
 
                             VStack(alignment: .leading, spacing: 8) {
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: 8)
                                     .fill(Color(.systemGray5))
                                     .frame(height: 14)
                                     .frame(maxWidth: .infinity)
 
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: 8)
                                     .fill(Color(.systemGray6))
                                     .frame(width: 120, height: 10)
                             }
