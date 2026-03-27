@@ -111,14 +111,14 @@ struct SearchView: View {
                                 case .success(let image):
                                     image
                                         .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                        .aspectRatio(contentMode: .fit)
                                 default:
-                                    Rectangle()
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                                         .fill(.quaternary)
+                                        .aspectRatio(1, contentMode: .fit)
                                 }
                             }
-                            .frame(height: 220)
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                             // Glass overlay with podcast info.
                             VStack(alignment: .leading, spacing: 4) {
@@ -211,17 +211,17 @@ struct SearchView: View {
                                                 case .success(let image):
                                                     image
                                                         .resizable()
-                                                        .aspectRatio(contentMode: .fill)
+                                                        .aspectRatio(1, contentMode: .fit)
                                                 default:
-                                                    RoundedRectangle(cornerRadius: 16)
+                                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                                                         .fill(.quaternary)
+                                                        .aspectRatio(1, contentMode: .fit)
                                                         .overlay {
                                                             Image(systemName: "waveform")
                                                                 .foregroundStyle(.secondary)
                                                         }
                                                 }
                                             }
-                                            .frame(minHeight: 160)
                                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                                             // Rank badge.
@@ -300,12 +300,12 @@ struct PodcastRowView: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            AsyncImage(url: URL(string: podcast.artworkUrl100)) { phase in
+            AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
                 switch phase {
                 case .success(let image):
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(1, contentMode: .fit)
                 default:
                     RoundedRectangle(cornerRadius: 16)
                         .fill(.quaternary)

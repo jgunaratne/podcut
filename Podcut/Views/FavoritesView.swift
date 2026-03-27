@@ -112,20 +112,19 @@ private struct PodcastGridItemView: View {
                 case .success(let image):
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(1, contentMode: .fit)
                 default:
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(.quaternary)
+                        .aspectRatio(1, contentMode: .fit)
                         .overlay {
-                            Image(systemName: "mic.fill")
+                            Image(systemName: "waveform")
                                 .font(.largeTitle)
                                 .foregroundStyle(.secondary)
                         }
                 }
             }
-            .aspectRatio(1, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 10, y: 5)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(podcast.collectionName)

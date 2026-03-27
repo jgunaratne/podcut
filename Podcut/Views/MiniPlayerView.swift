@@ -20,7 +20,7 @@ struct MiniPlayerView: View {
                                 case .success(let image):
                                     image
                                         .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                        .aspectRatio(1, contentMode: .fit)
                                 default:
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(.quaternary)

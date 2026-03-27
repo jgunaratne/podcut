@@ -29,10 +29,11 @@ struct NowPlayingView: View {
                     case .success(let image):
                         image
                             .resizable()
-                            .aspectRatio(contentMode: .fit)
+                            .aspectRatio(1, contentMode: .fit)
                     default:
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .fill(.quaternary)
+                            .aspectRatio(1, contentMode: .fit)
                             .overlay {
                                 Image(systemName: "waveform")
                                     .font(.system(size: 56, weight: .thin))
@@ -43,7 +44,7 @@ struct NowPlayingView: View {
                             }
                     }
                 }
-                .frame(width: 280, height: 280)
+                .frame(maxWidth: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .scaleEffect(player.isPlaying ? 1.0 : 0.92)
                 .animation(.spring(duration: 0.5), value: player.isPlaying)

@@ -84,7 +84,7 @@ struct PodcastDetailView: View {
                 Rectangle()
                     .fill(.quaternary)
                     .overlay {
-                        Image(systemName: "mic.fill")
+                        Image(systemName: "mic")
                             .font(.system(size: 80))
                             .foregroundStyle(.secondary)
                     }
