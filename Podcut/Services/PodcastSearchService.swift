@@ -25,23 +25,36 @@ struct PodcastSearchService {
     }
 
     /// Fetch top podcasts from the iTunes RSS feed (US, English).
+    /// Uses the RSS chart for ranking, then enriches with iTunes lookup for feed URLs.
     func fetchTopPodcasts(limit: Int = 12) async throws -> [Podcast] {
         let urlString = "https://rss.marketingtools.apple.com/api/v2/us/podcasts/top/\(limit)/podcasts.json"
         guard let url = URL(string: urlString) else { return [] }
 
         let (data, _) = try await URLSession.shared.data(from: url)
-
-        // Parse the Apple RSS feed format.
         let feed = try JSONDecoder().decode(AppleRSSFeed.self, from: data)
-        return feed.feed.results.compactMap { entry in
-            guard let id = Int(entry.id) else { return nil }
-            return Podcast(
-                id: id,
-                collectionName: entry.name,
-                artistName: entry.artistName,
-                artworkUrl600: entry.artworkUrl100,
-                artworkUrl100: entry.artworkUrl100
-            )
+
+        // Get the IDs and look them up via iTunes to get feedUrl.
+        let ids = feed.feed.results.compactMap { $0.id }
+        guard !ids.isEmpty else { return [] }
+
+        let idsString = ids.joined(separator: ",")
+        var lookupComponents = URLComponents(string: "https://itunes.apple.com/lookup")!
+        lookupComponents.queryItems = [
+            URLQueryItem(name: "id", value: idsString),
+            URLQueryItem(name: "entity", value: "podcast"),
+            URLQueryItem(name: "country", value: "US"),
+        ]
+
+        guard let lookupURL = lookupComponents.url else { return [] }
+
+        let (lookupData, _) = try await URLSession.shared.data(from: lookupURL)
+        let lookupResponse = try JSONDecoder().decode(PodcastSearchResponse.self, from: lookupData)
+
+        // Return in chart order by mapping RSS IDs to lookup results.
+        let lookupMap = Dictionary(uniqueKeysWithValues: lookupResponse.results.map { ($0.id, $0) })
+        return ids.compactMap { id -> Podcast? in
+            guard let numericId = Int(id) else { return nil }
+            return lookupMap[numericId]
         }
     }
 }
