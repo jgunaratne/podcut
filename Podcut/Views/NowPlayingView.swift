@@ -5,6 +5,8 @@ struct NowPlayingView: View {
     @Environment(AudioPlayerManager.self) private var player
     @Environment(\.dismiss) private var dismiss
 
+    var onGoToEpisode: ((Episode) -> Void)?
+
     @State private var dragProgress: Double?
     @State private var playbackRate: Float = 1.0
 
@@ -162,6 +164,22 @@ struct NowPlayingView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
                     .glassEffect(.regular, in: .capsule)
+            }
+
+            Spacer()
+                .frame(height: 16)
+
+            // Go to episode (transcript, summary, chat).
+            if let episode = player.currentEpisode {
+                Button {
+                    onGoToEpisode?(episode)
+                } label: {
+                    Label("Transcript & Chat", systemImage: "doc.text")
+                        .font(.subheadline.weight(.medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .glassEffect(.regular, in: .capsule)
+                }
             }
 
             Spacer()
