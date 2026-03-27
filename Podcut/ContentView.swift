@@ -5,8 +5,6 @@ struct ContentView: View {
     @Environment(AudioPlayerManager.self) private var player
     @State private var selectedTab = 0
     @State private var showNowPlaying = false
-    @State private var showEpisodePage = false
-    @State private var episodeToShow: Episode?
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
     var body: some View {
@@ -38,38 +36,8 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showNowPlaying) {
-            NowPlayingView(onGoToEpisode: { episode in
-                episodeToShow = episode
-                showNowPlaying = false
-            })
-            .environment(player)
-        }
-        .onChange(of: showNowPlaying) { _, isShowing in
-            if !isShowing, episodeToShow != nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    showEpisodePage = true
-                }
-            }
-        }
-        .fullScreenCover(isPresented: $showEpisodePage, onDismiss: {
-            episodeToShow = nil
-        }) {
-            if let episode = episodeToShow {
-                NavigationStack {
-                    EpisodePageView(episode: episode)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button {
-                                    showEpisodePage = false
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.body.weight(.medium))
-                                }
-                            }
-                        }
-                }
+            NowPlayingView()
                 .environment(player)
-            }
         }
     }
 }

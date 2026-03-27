@@ -5,187 +5,193 @@ struct NowPlayingView: View {
     @Environment(AudioPlayerManager.self) private var player
     @Environment(\.dismiss) private var dismiss
 
-    var onGoToEpisode: ((Episode) -> Void)?
-
     @State private var dragProgress: Double?
     @State private var playbackRate: Float = 1.0
+    @State private var showEpisodePage = false
 
     private let availableRates: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Drag handle.
-            Capsule()
-                .fill(.tertiary)
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
-                .padding(.bottom, 24)
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Drag handle.
+                Capsule()
+                    .fill(.tertiary)
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 10)
+                    .padding(.bottom, 24)
 
-            Spacer()
+                Spacer()
 
-            // Artwork.
-            AsyncImage(url: player.currentEpisode?.artworkURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                default:
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(.quaternary)
-                        .overlay {
-                            Image(systemName: "waveform")
-                                .font(.system(size: 56, weight: .thin))
-                                .foregroundStyle(.secondary)
-                                .symbolEffect(
-                                    .variableColor.iterative,
-                                    isActive: player.isPlaying)
-                        }
-                }
-            }
-            .frame(width: 280, height: 280)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .scaleEffect(player.isPlaying ? 1.0 : 0.92)
-            .animation(.spring(duration: 0.5), value: player.isPlaying)
-
-            Spacer()
-                .frame(height: 36)
-
-            // Episode info.
-            VStack(spacing: 6) {
-                Text(player.currentEpisode?.title ?? "Not Playing")
-                    .font(.title3.bold())
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-
-                Text(player.currentEpisode?.pubDate ?? "")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 32)
-
-            Spacer()
-                .frame(height: 32)
-
-            // Scrubber.
-            VStack(spacing: 4) {
-                Slider(
-                    value: Binding(
-                        get: { dragProgress ?? player.playbackProgress },
-                        set: { newValue in
-                            dragProgress = newValue
-                        }
-                    ),
-                    in: 0...1,
-                    onEditingChanged: { editing in
-                        if !editing, let progress = dragProgress {
-                            player.seek(to: progress)
-                            dragProgress = nil
-                        }
+                // Artwork.
+                AsyncImage(url: player.currentEpisode?.artworkURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    default:
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(.quaternary)
+                            .overlay {
+                                Image(systemName: "waveform")
+                                    .font(.system(size: 56, weight: .thin))
+                                    .foregroundStyle(.secondary)
+                                    .symbolEffect(
+                                        .variableColor.iterative,
+                                        isActive: player.isPlaying)
+                            }
                     }
-                )
-                .tint(.blue)
-
-                HStack {
-                    Text(player.formattedTime(player.currentTime))
-                    Spacer()
-                    Text(
-                        "-"
-                            + player.formattedTime(
-                                max(player.duration - player.currentTime, 0)))
                 }
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 32)
+                .frame(width: 280, height: 280)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .scaleEffect(player.isPlaying ? 1.0 : 0.92)
+                .animation(.spring(duration: 0.5), value: player.isPlaying)
 
-            Spacer()
-                .frame(height: 28)
+                Spacer()
+                    .frame(height: 36)
 
-            // Playback controls.
-            HStack(spacing: 44) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    player.skipBackward()
-                } label: {
-                    Image(systemName: "gobackward.15")
-                        .font(.title2)
+                // Episode info.
+                VStack(spacing: 6) {
+                    Text(player.currentEpisode?.title ?? "Not Playing")
+                        .font(.title3.bold())
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+
+                    Text(player.currentEpisode?.pubDate ?? "")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                .accessibilityLabel("Skip back 15 seconds")
+                .padding(.horizontal, 32)
 
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    player.togglePlayPause()
-                } label: {
-                    Image(
-                        systemName: player.isPlaying
-                            ? "pause.circle.fill" : "play.circle.fill"
-                    )
-                    .font(.system(size: 60))
-                    .contentTransition(.symbolEffect(.replace))
-                }
-                .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+                Spacer()
+                    .frame(height: 32)
 
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    player.skipForward()
-                } label: {
-                    Image(systemName: "goforward.30")
-                        .font(.title2)
-                }
-                .accessibilityLabel("Skip forward 30 seconds")
-            }
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 32)
-            .padding(.vertical, 16)
-            .glassEffect(.regular, in: .capsule)
-
-            Spacer()
-                .frame(height: 20)
-
-            // Playback speed control.
-            Menu {
-                ForEach(availableRates, id: \.self) { rate in
-                    Button {
-                        playbackRate = rate
-                        player.setRate(rate)
-                    } label: {
-                        HStack {
-                            Text(rateLabel(rate))
-                            if rate == playbackRate {
-                                Image(systemName: "checkmark")
+                // Scrubber.
+                VStack(spacing: 4) {
+                    Slider(
+                        value: Binding(
+                            get: { dragProgress ?? player.playbackProgress },
+                            set: { newValue in
+                                dragProgress = newValue
+                            }
+                        ),
+                        in: 0...1,
+                        onEditingChanged: { editing in
+                            if !editing, let progress = dragProgress {
+                                player.seek(to: progress)
+                                dragProgress = nil
                             }
                         }
+                    )
+                    .tint(.blue)
+
+                    HStack {
+                        Text(player.formattedTime(player.currentTime))
+                        Spacer()
+                        Text(
+                            "-"
+                                + player.formattedTime(
+                                    max(player.duration - player.currentTime, 0)))
+                    }
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 32)
+
+                Spacer()
+                    .frame(height: 28)
+
+                // Playback controls.
+                HStack(spacing: 44) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        player.skipBackward()
+                    } label: {
+                        Image(systemName: "gobackward.15")
+                            .font(.title2)
+                    }
+                    .accessibilityLabel("Skip back 15 seconds")
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        player.togglePlayPause()
+                    } label: {
+                        Image(
+                            systemName: player.isPlaying
+                                ? "pause.circle.fill" : "play.circle.fill"
+                        )
+                        .font(.system(size: 60))
+                        .contentTransition(.symbolEffect(.replace))
+                    }
+                    .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        player.skipForward()
+                    } label: {
+                        Image(systemName: "goforward.30")
+                            .font(.title2)
+                    }
+                    .accessibilityLabel("Skip forward 30 seconds")
+                }
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 16)
+                .glassEffect(.regular, in: .capsule)
+
+                Spacer()
+                    .frame(height: 20)
+
+                // Bottom actions row.
+                HStack(spacing: 24) {
+                    // Playback speed.
+                    Menu {
+                        ForEach(availableRates, id: \.self) { rate in
+                            Button {
+                                playbackRate = rate
+                                player.setRate(rate)
+                            } label: {
+                                HStack {
+                                    Text(rateLabel(rate))
+                                    if rate == playbackRate {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(rateLabel(playbackRate))
+                            .font(.subheadline.weight(.medium).monospacedDigit())
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .glassEffect(.regular, in: .capsule)
+                    }
+
+                    // Transcript & Chat — navigates within this sheet.
+                    if player.currentEpisode != nil {
+                        Button {
+                            showEpisodePage = true
+                        } label: {
+                            Label("Transcript", systemImage: "doc.text")
+                                .font(.subheadline.weight(.medium))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .glassEffect(.regular, in: .capsule)
+                        }
                     }
                 }
-            } label: {
-                Text(rateLabel(playbackRate))
-                    .font(.subheadline.weight(.medium).monospacedDigit())
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .glassEffect(.regular, in: .capsule)
+
+                Spacer()
             }
-
-            Spacer()
-                .frame(height: 16)
-
-            // Go to episode (transcript, summary, chat).
-            if let episode = player.currentEpisode {
-                Button {
-                    onGoToEpisode?(episode)
-                } label: {
-                    Label("Transcript & Chat", systemImage: "doc.text")
-                        .font(.subheadline.weight(.medium))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .glassEffect(.regular, in: .capsule)
+            .frame(maxWidth: .infinity)
+            .background(Color(.systemBackground).ignoresSafeArea())
+            .navigationDestination(isPresented: $showEpisodePage) {
+                if let episode = player.currentEpisode {
+                    EpisodePageView(episode: episode)
                 }
             }
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     private func rateLabel(_ rate: Float) -> String {
