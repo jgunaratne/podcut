@@ -126,6 +126,38 @@ struct GeminiService {
     }
 }
 
+    /// Generate contextual suggested questions based on the transcript.
+    static func suggestQuestions(transcript: String) async throws -> [String] {
+        let model = FirebaseAI.firebaseAI(backend: .googleAI())
+            .generativeModel(modelName: "gemini-2.5-flash-lite")
+
+        let safeTranscript = transcript.count > 50_000
+            ? String(transcript.prefix(50_000))
+            : transcript
+
+        let prompt = """
+            Based on the following podcast transcript, generate exactly 5 short, \
+            interesting questions a listener might want to ask. Each question should \
+            be specific to the content discussed, not generic. Keep each under 50 characters. \
+            Return ONLY the questions, one per line, no numbering, no bullets, no quotes.
+
+            TRANSCRIPT:
+            \(safeTranscript)
+            """
+
+        let response = try await model.generateContent(prompt)
+        guard let text = response.text else {
+            throw GeminiError.emptyResponse
+        }
+
+        return text
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .prefix(5)
+            .map { String($0) }
+    }
+
 enum GeminiError: LocalizedError {
     case emptyResponse
     case firebaseAI(detail: String)

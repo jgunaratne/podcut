@@ -17,6 +17,9 @@ struct PodcastChatView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var isAnimatingBouncingDots = false
+    @State private var suggestions: [String] = []
+    @State private var isLoadingSuggestions = false
+    @State private var showSuggestions = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,6 +33,12 @@ struct PodcastChatView: View {
                 chatContent
             }
         }
+        .task {
+            // Generate contextual suggestions when the view appears.
+            if suggestions.isEmpty && !transcript.isEmpty {
+                await loadSuggestions()
+            }
+        }
     }
 
     // MARK: - Chat Content
@@ -40,7 +49,7 @@ struct PodcastChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        // Welcome message.
+                        // Welcome message with contextual suggestions.
                         if messages.isEmpty {
                             welcomeBubble
                         }
@@ -67,6 +76,11 @@ struct PodcastChatView: View {
                 }
             }
 
+            // Suggestion chips above input when toggled.
+            if showSuggestions && !suggestions.isEmpty {
+                suggestionsBar
+            }
+
             // Error.
             if let error = errorMessage {
                 Text(error)
@@ -86,22 +100,33 @@ struct PodcastChatView: View {
 
     private var welcomeBubble: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Podcast Chat", systemImage: "sparkles.fill")
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Podcast Chat", systemImage: "sparkles")
                     .font(.headline)
                     .foregroundStyle(.blue.gradient)
 
-                Text("Ask me anything about this episode. I'll answer based on the transcript.")
+                Text("Ask me anything about this episode.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                // Suggestion chips.
-                FlowLayout(spacing: 6) {
-                    suggestionChip("What are the main topics?")
-                    suggestionChip("Summarize the key takeaways")
-                    suggestionChip("What was the most interesting point?")
+                // Show contextual suggestions or loading state.
+                if isLoadingSuggestions {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text("Analyzing transcript…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 2)
+                } else if !suggestions.isEmpty {
+                    FlowLayout(spacing: 6) {
+                        ForEach(suggestions, id: \.self) { suggestion in
+                            suggestionChip(suggestion)
+                        }
+                    }
+                    .padding(.top, 4)
                 }
-                .padding(.top, 4)
             }
             .padding(16)
             .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -112,6 +137,35 @@ struct PodcastChatView: View {
             Spacer()
         }
         .padding(.horizontal)
+    }
+
+    // MARK: - Suggestions Bar
+
+    private var suggestionsBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(suggestions, id: \.self) { suggestion in
+                    Button {
+                        inputText = suggestion
+                        sendMessage()
+                        showSuggestions = false
+                    } label: {
+                        Text(suggestion)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(.blue.opacity(0.1), in: Capsule())
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+        .background(.bar)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private func suggestionChip(_ text: String) -> some View {
@@ -199,11 +253,24 @@ struct PodcastChatView: View {
         .padding(.horizontal)
     }
 
-
     // MARK: - Input Bar
 
     private var inputBar: some View {
         HStack(spacing: 10) {
+            // Suggestions toggle button.
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showSuggestions.toggle()
+                }
+            } label: {
+                Image(systemName: showSuggestions ? "lightbulb.fill" : "lightbulb")
+                    .font(.title3)
+                    .foregroundStyle(showSuggestions ? .blue : .secondary)
+                    .frame(width: 36, height: 36)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .disabled(suggestions.isEmpty && !isLoadingSuggestions)
+
             TextField("Ask about this episode…", text: $inputText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...4)
@@ -237,6 +304,7 @@ struct PodcastChatView: View {
 
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         inputText = ""
+        showSuggestions = false
         messages.append(ChatMessage(role: "user", text: question))
         errorMessage = nil
         isLoading = true
@@ -268,6 +336,23 @@ struct PodcastChatView: View {
             }
             isLoading = false
         }
+    }
+
+    // MARK: - Load Suggestions
+
+    private func loadSuggestions() async {
+        isLoadingSuggestions = true
+        do {
+            suggestions = try await GeminiService.suggestQuestions(transcript: transcript)
+        } catch {
+            // Fall back to generic suggestions if AI fails.
+            suggestions = [
+                "What are the main topics?",
+                "What were the key takeaways?",
+                "Who was mentioned in this episode?",
+            ]
+        }
+        isLoadingSuggestions = false
     }
 }
 
