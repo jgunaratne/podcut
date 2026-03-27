@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Manages a local cache of downloaded episode audio files.
@@ -25,9 +26,10 @@ final class AudioCache: Sendable {
     /// - Parameter remoteURL: The episode's remote audio URL.
     /// - Returns: A local file URL pointing to the downloaded audio.
     func localURL(for remoteURL: URL) async throws -> URL {
-        let filename = remoteURL.absoluteString
-            .addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? UUID().uuidString
-        let localURL = cacheDir.appendingPathComponent(filename)
+        let hash = SHA256.hash(data: Data(remoteURL.absoluteString.utf8))
+        let filename = hash.compactMap { String(format: "%02x", $0) }.joined()
+        let ext = remoteURL.pathExtension.isEmpty ? "mp3" : remoteURL.pathExtension
+        let localURL = cacheDir.appendingPathComponent(filename).appendingPathExtension(ext)
 
         // Already cached — return immediately.
         if FileManager.default.fileExists(atPath: localURL.path) {
@@ -55,9 +57,10 @@ final class AudioCache: Sendable {
 
     /// Remove a cached file for a specific URL.
     func removeCached(for remoteURL: URL) {
-        let filename = remoteURL.absoluteString
-            .addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
-        let localURL = cacheDir.appendingPathComponent(filename)
+        let hash = SHA256.hash(data: Data(remoteURL.absoluteString.utf8))
+        let filename = hash.compactMap { String(format: "%02x", $0) }.joined()
+        let ext = remoteURL.pathExtension.isEmpty ? "mp3" : remoteURL.pathExtension
+        let localURL = cacheDir.appendingPathComponent(filename).appendingPathExtension(ext)
         try? FileManager.default.removeItem(at: localURL)
     }
 
