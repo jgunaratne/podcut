@@ -39,13 +39,21 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showNowPlaying) {
             NowPlayingView(onGoToEpisode: { episode in
-                showNowPlaying = false
                 episodeToShow = episode
-                showEpisodePage = true
+                showNowPlaying = false
             })
             .environment(player)
         }
-        .fullScreenCover(isPresented: $showEpisodePage) {
+        .onChange(of: showNowPlaying) { _, isShowing in
+            if !isShowing, episodeToShow != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    showEpisodePage = true
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showEpisodePage, onDismiss: {
+            episodeToShow = nil
+        }) {
             if let episode = episodeToShow {
                 NavigationStack {
                     EpisodePageView(episode: episode)
