@@ -157,6 +157,7 @@ struct GeminiService {
             .prefix(5)
             .map { String($0) }
     }
+}
 
 enum GeminiError: LocalizedError {
     case emptyResponse
