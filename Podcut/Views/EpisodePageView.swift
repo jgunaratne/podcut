@@ -65,7 +65,7 @@ struct EpisodePageView: View {
                 showPaywall = true
             }
         }
-        .task { await SubscriptionManager.shared.loadProducts() }
+        .task(priority: .high) { await SubscriptionManager.shared.loadProducts() }
     }
 
     // MARK: - HTML Description Rendering

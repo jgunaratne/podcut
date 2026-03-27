@@ -33,7 +33,7 @@ struct PodcastChatView: View {
                 chatContent
             }
         }
-        .task {
+        .task(priority: .high) {
             // Generate contextual suggestions when the view appears.
             if suggestions.isEmpty && !transcript.isEmpty {
                 await loadSuggestions()

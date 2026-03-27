@@ -75,11 +75,11 @@ struct SearchView: View {
                 guard !Task.isCancelled else { return }
                 debouncedQuery = query
             }
-            .task(id: debouncedQuery) {
+            .task(priority: .high, id: debouncedQuery) {
                 guard !debouncedQuery.isEmpty else { return }
                 await performSearch(debouncedQuery)
             }
-            .task {
+            .task(priority: .high) {
                 if trendingPodcasts.isEmpty {
                     await loadTrending()
                 }

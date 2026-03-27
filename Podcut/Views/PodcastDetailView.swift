@@ -66,7 +66,7 @@ struct PodcastDetailView: View {
                 }
             }
         }
-        .task {
+        .task(priority: .high) {
             await loadEpisodes()
         }
     }

@@ -61,7 +61,7 @@ struct PaywallView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
         }
-        .task { await manager.loadProducts() }
+        .task(priority: .high) { await manager.loadProducts() }
         .onChange(of: manager.isPro) {
             if manager.isPro { dismiss() }
         }
