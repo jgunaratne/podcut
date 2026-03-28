@@ -29,10 +29,9 @@ struct ContentView: View {
                 SettingsView()
             }
         }
-        .overlay(alignment: .bottom) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if player.currentEpisode != nil {
                 MiniPlayerView(showNowPlaying: $showNowPlaying)
-                    .padding(.bottom, 49)
             }
         }
         .sheet(isPresented: $showNowPlaying) {

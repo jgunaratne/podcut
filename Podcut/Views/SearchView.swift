@@ -75,7 +75,7 @@ struct SearchView: View {
                 guard !Task.isCancelled else { return }
                 debouncedQuery = query
             }
-            .task(priority: .high, id: debouncedQuery) {
+            .task(id: debouncedQuery, priority: .high) {
                 guard !debouncedQuery.isEmpty else { return }
                 await performSearch(debouncedQuery)
             }

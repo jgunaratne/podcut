@@ -104,7 +104,7 @@ struct MiniPlayerView: View {
             }
             .glassEffect(.regular, in: .rect(cornerRadius: 16))
             .padding(.horizontal, 12)
-            .padding(.bottom, 6)
+            .padding(.top, 6)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
