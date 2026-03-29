@@ -65,7 +65,6 @@ struct FavoritesView: View {
             }
         }
         .listStyle(.plain)
-        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
     }
 
     private func gridView() -> some View {
@@ -87,7 +86,6 @@ struct FavoritesView: View {
             }
             .padding()
         }
-        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
     }
 
     private func layoutPicker() -> some View {

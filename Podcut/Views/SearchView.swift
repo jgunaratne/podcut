@@ -52,7 +52,6 @@ struct SearchView: View {
                         }
                     }
                     .listStyle(.plain)
-                    .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
                 }
             }
             .navigationTitle("Search")
@@ -258,7 +257,6 @@ struct SearchView: View {
             }
             .padding(.top, 8)
         }
-        .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 80) }
     }
 
     // MARK: - Network
