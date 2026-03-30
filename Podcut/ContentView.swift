@@ -16,6 +16,10 @@ struct ContentView: View {
 
     private var mainView: some View {
         TabView {
+            Tab("Home", systemImage: "house.fill") {
+                HomeView()
+            }
+
             Tab("Search", systemImage: "magnifyingglass", role: .search) {
                 SearchView()
             }

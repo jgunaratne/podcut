@@ -508,7 +508,8 @@ struct EpisodePageView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.bar)
+        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, 12)
     }
 
     private func pageTab(icon: String, selectedIcon: String, index: Int) -> some View {
