@@ -16,7 +16,11 @@ struct ContentView: View {
 
     private var mainView: some View {
         TabView {
-            Tab("Home", systemImage: "house.fill") {
+            Tab("Chat", systemImage: "bubble.left.and.text.bubble.right.fill") {
+                GeneralChatView()
+            }
+
+            Tab("Browse", systemImage: "square.grid.2x2.fill") {
                 HomeView()
             }
 
