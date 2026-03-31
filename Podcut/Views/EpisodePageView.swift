@@ -552,19 +552,23 @@ struct EpisodePageView: View {
         summaryError = nil
 
         do {
+            let result: String
             if !service.segments.isEmpty {
-                summaryText = try await GeminiService.summarize(
+                result = try await GeminiService.summarize(
                     segments: service.segments)
             } else {
-                summaryText = try await GeminiService.summarize(
+                result = try await GeminiService.summarize(
                     transcript: service.transcriptionText)
             }
+            summaryText = result
         } catch {
             summaryError = error.localizedDescription
         }
 
         isSummarizing = false
-        saveToDevice()
+        if !summaryText.isEmpty {
+            saveToDevice()
+        }
     }
 
     // MARK: - Tappable Summary with Timecodes

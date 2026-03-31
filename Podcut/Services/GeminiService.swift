@@ -50,9 +50,12 @@ struct GeminiService {
             }
 
             return text
+        } catch is GeminiError {
+            throw GeminiError.emptyResponse
         } catch let error as GenerateContentError {
-            // Surface the detailed Firebase AI error.
             throw GeminiError.firebaseAI(detail: String(describing: error))
+        } catch {
+            throw GeminiError.firebaseAI(detail: error.localizedDescription)
         }
     }
 
@@ -82,8 +85,12 @@ struct GeminiService {
             }
 
             return text
+        } catch is GeminiError {
+            throw GeminiError.emptyResponse
         } catch let error as GenerateContentError {
             throw GeminiError.firebaseAI(detail: String(describing: error))
+        } catch {
+            throw GeminiError.firebaseAI(detail: error.localizedDescription)
         }
     }
 
@@ -120,8 +127,12 @@ struct GeminiService {
                 throw GeminiError.emptyResponse
             }
             return text
+        } catch is GeminiError {
+            throw GeminiError.emptyResponse
         } catch let error as GenerateContentError {
             throw GeminiError.firebaseAI(detail: String(describing: error))
+        } catch {
+            throw GeminiError.firebaseAI(detail: error.localizedDescription)
         }
     }
 
