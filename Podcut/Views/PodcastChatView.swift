@@ -116,6 +116,7 @@ struct PodcastChatView: View {
                         ForEach(suggestions, id: \.self) { suggestion in
                             suggestionChip(suggestion)
                         }
+                        generateMoreChip
                     }
                     .padding(.top, 4)
                 }
@@ -148,6 +149,21 @@ struct PodcastChatView: View {
                     .glassEffect(.regular, in: .capsule)
                     .buttonStyle(.plain)
                 }
+
+                Button {
+                    Task { await loadSuggestions() }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.caption2)
+                        Text("More")
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                .glassEffect(.regular.tint(.orange), in: .capsule)
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -166,6 +182,23 @@ struct PodcastChatView: View {
                 .padding(.vertical, 6)
         }
         .glassEffect(.regular, in: .capsule)
+        .buttonStyle(.plain)
+    }
+
+    private var generateMoreChip: some View {
+        Button {
+            Task { await loadSuggestions() }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption2)
+                Text("More")
+                    .font(.caption)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+        }
+        .glassEffect(.regular.tint(.orange), in: .capsule)
         .buttonStyle(.plain)
     }
 
@@ -321,13 +354,20 @@ struct PodcastChatView: View {
     private func loadSuggestions() async {
         isLoadingSuggestions = true
         do {
-            suggestions = try await GeminiService.suggestQuestions(transcript: transcript)
+            let newSuggestions = try await GeminiService.suggestQuestions(transcript: transcript)
+            // Append new suggestions, avoiding duplicates
+            let existing = Set(suggestions)
+            let unique = newSuggestions.filter { !existing.contains($0) }
+            suggestions.append(contentsOf: unique)
         } catch {
-            suggestions = [
-                "What are the main topics?",
-                "What were the key takeaways?",
-                "Who was mentioned in this episode?",
-            ]
+            // Fall back to generic suggestions only if empty
+            if suggestions.isEmpty {
+                suggestions = [
+                    "What are the main topics?",
+                    "What were the key takeaways?",
+                    "Who was mentioned in this episode?",
+                ]
+            }
         }
         isLoadingSuggestions = false
     }
