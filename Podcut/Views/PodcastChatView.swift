@@ -34,7 +34,6 @@ struct PodcastChatView: View {
             }
         }
         .task(priority: .high) {
-            // Generate contextual suggestions when the view appears.
             if suggestions.isEmpty && !transcript.isEmpty {
                 await loadSuggestions()
             }
@@ -45,11 +44,9 @@ struct PodcastChatView: View {
 
     private var chatContent: some View {
         VStack(spacing: 0) {
-            // Messages.
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        // Welcome message with contextual suggestions.
                         if messages.isEmpty {
                             welcomeBubble
                         }
@@ -76,12 +73,10 @@ struct PodcastChatView: View {
                 }
             }
 
-            // Suggestion chips above input when toggled.
             if showSuggestions && !suggestions.isEmpty {
                 suggestionsBar
             }
 
-            // Error.
             if let error = errorMessage {
                 Text(error)
                     .font(.caption)
@@ -90,10 +85,8 @@ struct PodcastChatView: View {
                     .padding(.bottom, 4)
             }
 
-            // Input bar.
             inputBar
         }
-        .background(.background)
     }
 
     // MARK: - Welcome
@@ -109,7 +102,6 @@ struct PodcastChatView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                // Show contextual suggestions or loading state.
                 if isLoadingSuggestions {
                     HStack(spacing: 6) {
                         ProgressView()
@@ -129,11 +121,8 @@ struct PodcastChatView: View {
                 }
             }
             .padding(16)
-            .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            }
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+
             Spacer()
         }
         .padding(.horizontal)
@@ -155,16 +144,14 @@ struct PodcastChatView: View {
                             .lineLimit(1)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(.blue.opacity(0.1), in: Capsule())
-                            .foregroundStyle(.blue)
                     }
+                    .glassEffect(.regular, in: .capsule)
                     .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-        .background(.bar)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -177,9 +164,8 @@ struct PodcastChatView: View {
                 .font(.caption)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.blue.opacity(0.12), in: Capsule())
-                .foregroundStyle(.blue)
         }
+        .glassEffect(.regular, in: .capsule)
         .buttonStyle(.plain)
     }
 
@@ -187,46 +173,41 @@ struct PodcastChatView: View {
 
     private func messageBubble(_ message: ChatMessage) -> some View {
         let isUser = message.role == "user"
-        
+
         return HStack {
             if isUser { Spacer(minLength: 60) }
 
             Text(message.text)
                 .font(.body)
                 .textSelection(.enabled)
+                .foregroundStyle(isUser ? .white : .primary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(
-                    isUser
-                        ? AnyShapeStyle(.blue.gradient)
-                        : AnyShapeStyle(.quaternary),
-                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-                )
-                .clipShape(bubbleShape(isUser: isUser))
-                .foregroundStyle(isUser ? .white : .primary)
-            
+                .if(isUser) { view in
+                    view.background(.blue.gradient, in: bubbleShape(isUser: true))
+                }
+                .if(!isUser) { view in
+                    view.glassEffect(.regular, in: bubbleShape(isUser: false))
+                }
+
             if !isUser { Spacer(minLength: 60) }
         }
         .padding(.horizontal)
         .transition(.scale(scale: 0.9, anchor: isUser ? .bottomTrailing : .bottomLeading).combined(with: .opacity))
     }
-    
+
     private func bubbleShape(isUser: Bool) -> some Shape {
-        let corners: UIRectCorner = isUser
-            ? [.topLeft, .bottomLeft, .topRight]
-            : [.topRight, .bottomRight, .topLeft]
-        
-        return UnevenRoundedRectangle(
+        UnevenRoundedRectangle(
             cornerRadii: .init(
-                topLeading: corners.contains(.topLeft) ? 20 : 6,
-                bottomLeading: corners.contains(.bottomLeft) ? 20 : 6,
-                bottomTrailing: corners.contains(.bottomRight) ? 20 : 6,
-                topTrailing: corners.contains(.topRight) ? 20 : 6
+                topLeading: 20,
+                bottomLeading: isUser ? 20 : 6,
+                bottomTrailing: isUser ? 6 : 20,
+                topTrailing: 20
             ),
             style: .continuous
         )
     }
-    
+
     private func typingIndicator() -> some View {
         HStack {
             HStack(spacing: 5) {
@@ -245,9 +226,8 @@ struct PodcastChatView: View {
             }
             .onAppear { isAnimatingBouncingDots = true }
             .padding(16)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .clipShape(bubbleShape(isUser: false))
-            
+            .glassEffect(.regular, in: bubbleShape(isUser: false))
+
             Spacer()
         }
         .padding(.horizontal)
@@ -276,7 +256,7 @@ struct PodcastChatView: View {
                 .lineLimit(1...4)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(.quaternary, in: Capsule())
+                .glassEffect(.regular, in: .capsule)
                 .onSubmit { sendMessage() }
 
             Button {
@@ -309,7 +289,6 @@ struct PodcastChatView: View {
         errorMessage = nil
         isLoading = true
 
-        // Build timestamped transcript for context.
         let context: String
         if !segments.isEmpty {
             context = segments.map { "[\($0.formattedTime)] \($0.text)" }
@@ -318,7 +297,6 @@ struct PodcastChatView: View {
             context = transcript
         }
 
-        // Build history (last 10 messages for context window).
         let history = messages.suffix(10).map { (role: $0.role, text: $0.text) }
 
         Task {
@@ -345,7 +323,6 @@ struct PodcastChatView: View {
         do {
             suggestions = try await GeminiService.suggestQuestions(transcript: transcript)
         } catch {
-            // Fall back to generic suggestions if AI fails.
             suggestions = [
                 "What are the main topics?",
                 "What were the key takeaways?",
@@ -353,6 +330,19 @@ struct PodcastChatView: View {
             ]
         }
         isLoadingSuggestions = false
+    }
+}
+
+// MARK: - Conditional View Modifier
+
+private extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }
 
