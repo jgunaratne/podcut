@@ -269,7 +269,7 @@ struct GeneralChatView: View {
                     : AnyShapeStyle(.blue),
                 in: Capsule()
             )
-            .foregroundStyle(isFollowed ? .secondary : .white)
+            .foregroundStyle(isFollowed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.white))
         }
         .buttonStyle(.plain)
         .frame(width: 140)
