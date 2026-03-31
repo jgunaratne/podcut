@@ -82,13 +82,18 @@ struct GeneralChatView: View {
     // MARK: - Welcome
 
     private var welcomeView: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 40)
+        VStack(spacing: 28) {
+            Spacer(minLength: 60)
 
-            Image(systemName: "waveform.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.blue.gradient)
-                .symbolEffect(.pulse, options: .repeating)
+            // Glass icon badge
+            ZStack {
+                Image(systemName: "waveform.circle.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(.blue.gradient)
+                    .symbolEffect(.pulse, options: .repeating)
+            }
+            .frame(width: 96, height: 96)
+            .glassEffect(.regular, in: .circle)
 
             VStack(spacing: 8) {
                 Text("Hey! 👋")
@@ -101,7 +106,7 @@ struct GeneralChatView: View {
                     .padding(.horizontal, 32)
             }
 
-            // Suggestion chips
+            // Glass suggestion chips
             FlowLayout(spacing: 8) {
                 ForEach(assistant.generateSuggestions(), id: \.self) { suggestion in
                     Button {
@@ -112,9 +117,8 @@ struct GeneralChatView: View {
                             .font(.subheadline)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 9)
-                            .background(.blue.opacity(0.1), in: Capsule())
-                            .foregroundStyle(.blue)
                     }
+                    .glassEffect(.regular, in: .capsule)
                     .buttonStyle(.plain)
                 }
             }
@@ -132,17 +136,14 @@ struct GeneralChatView: View {
             userBubble(message.text)
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                // Text response
                 if !message.text.isEmpty {
                     assistantBubble(message.text)
                 }
 
-                // Inline podcast cards
                 if !message.podcasts.isEmpty {
                     podcastCarousel(message.podcasts)
                 }
 
-                // Inline episode cards
                 if !message.episodes.isEmpty {
                     episodeList(message.episodes)
                 }
@@ -157,10 +158,10 @@ struct GeneralChatView: View {
             Spacer(minLength: 60)
             Text(text)
                 .font(.body)
+                .foregroundStyle(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(.blue.gradient, in: chatBubbleShape(isUser: true))
-                .foregroundStyle(.white)
         }
         .padding(.horizontal)
     }
@@ -170,10 +171,10 @@ struct GeneralChatView: View {
             Text(text)
                 .font(.body)
                 .textSelection(.enabled)
+                .foregroundStyle(.primary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(.quaternary, in: chatBubbleShape(isUser: false))
-                .foregroundStyle(.primary)
+                .glassEffect(.regular, in: chatBubbleShape(isUser: false))
             Spacer(minLength: 60)
         }
         .padding(.horizontal)
@@ -211,39 +212,46 @@ struct GeneralChatView: View {
 
     private func podcastCard(_ podcast: Podcast) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(1, contentMode: .fit)
-                default:
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(.quaternary)
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            Image(systemName: "waveform")
-                                .foregroundStyle(.secondary)
-                        }
+            ZStack(alignment: .bottom) {
+                AsyncImage(url: URL(string: podcast.artworkUrl600)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(1, contentMode: .fill)
+                    default:
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(.quaternary)
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay {
+                                Image(systemName: "waveform")
+                                    .foregroundStyle(.secondary)
+                            }
+                    }
                 }
+                .frame(width: 140, height: 140)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                // Glass overlay with podcast name
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(podcast.collectionName)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+
+                    Text(podcast.artistName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                .padding(4)
             }
             .frame(width: 140, height: 140)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(podcast.collectionName)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-
-                Text(podcast.artistName)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .frame(width: 140, alignment: .leading)
-
-            // Follow button
             followButton(for: podcast)
         }
         .frame(width: 140)
@@ -263,14 +271,8 @@ struct GeneralChatView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
-            .background(
-                isFollowed
-                    ? AnyShapeStyle(.quaternary)
-                    : AnyShapeStyle(.blue),
-                in: Capsule()
-            )
-            .foregroundStyle(isFollowed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.white))
         }
+        .glassEffect(isFollowed ? .regular : .regular.tint(.blue), in: .capsule)
         .buttonStyle(.plain)
         .frame(width: 140)
     }
@@ -301,19 +303,18 @@ struct GeneralChatView: View {
                 }
             } label: {
                 ZStack {
-                    Circle()
-                        .fill(.blue.gradient)
-                        .frame(width: 40, height: 40)
                     if isThisLoading {
                         ProgressView()
-                            .tint(.white)
+                            .tint(.blue)
                             .scaleEffect(0.7)
                     } else {
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                             .font(.caption.bold())
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.blue)
                     }
                 }
+                .frame(width: 40, height: 40)
+                .glassEffect(.regular, in: .circle)
             }
             .buttonStyle(.plain)
 
@@ -337,7 +338,6 @@ struct GeneralChatView: View {
 
             Spacer(minLength: 0)
 
-            // Navigate to detail
             NavigationLink(value: podcast) {
                 Image(systemName: "chevron.right")
                     .font(.caption)
@@ -346,7 +346,7 @@ struct GeneralChatView: View {
             .buttonStyle(.plain)
         }
         .padding(12)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     // MARK: - Typing Indicator
@@ -370,7 +370,7 @@ struct GeneralChatView: View {
             .onAppear { isAnimatingDots = true }
             .onDisappear { isAnimatingDots = false }
             .padding(16)
-            .background(.quaternary, in: chatBubbleShape(isUser: false))
+            .glassEffect(.regular, in: chatBubbleShape(isUser: false))
 
             Spacer()
         }
@@ -386,7 +386,7 @@ struct GeneralChatView: View {
                 .lineLimit(1...4)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(.quaternary, in: Capsule())
+                .glassEffect(.regular, in: .capsule)
                 .onSubmit { sendMessage() }
 
             Button {
