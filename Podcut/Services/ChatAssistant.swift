@@ -38,8 +38,7 @@ final class ChatAssistant {
             description: "Search for podcasts by name, topic, or keyword. Use this when the user wants to discover or find podcasts.",
             parameters: [
                 "query": .string(description: "Search query for podcasts"),
-            ],
-            requiredParameters: ["query"]
+            ]
         )
 
         let getSubscriptions = FunctionDeclaration(
@@ -58,7 +57,7 @@ final class ChatAssistant {
                 "podcastArtist": .string(description: "The podcast artist name"),
                 "podcastId": .integer(description: "The podcast iTunes ID"),
             ],
-            requiredParameters: ["feedUrl", "podcastName"]
+            optionalParameters: ["podcastArtwork", "podcastArtist", "podcastId"]
         )
 
         let getTrending = FunctionDeclaration(
@@ -67,7 +66,7 @@ final class ChatAssistant {
             parameters: [:]
         )
 
-        let tools = [Tool(functionDeclarations: [
+        let tools = [Tool.functionDeclarations([
             searchPodcasts,
             getSubscriptions,
             getLatestEpisodes,
@@ -79,7 +78,7 @@ final class ChatAssistant {
                 modelName: "gemini-2.5-flash-lite",
                 generationConfig: GenerationConfig(temperature: 0.7, maxOutputTokens: 1024),
                 tools: tools,
-                systemInstruction: ModelContent(role: "system", parts: [.text(systemPrompt)])
+                systemInstruction: ModelContent(role: "system", parts: systemPrompt)
             )
 
         chat = model?.startChat()
@@ -144,8 +143,9 @@ final class ChatAssistant {
                 }
 
                 // Send function results back to the model.
+                let responseParts: [any PartsRepresentable] = functionResponses
                 response = try await chat.sendMessage(
-                    functionResponses.map { ModelContent.Part.functionResponse($0) }
+                    [ModelContent(role: "function", parts: responseParts.flatMap { $0.partsValue })]
                 )
                 rounds += 1
             }
