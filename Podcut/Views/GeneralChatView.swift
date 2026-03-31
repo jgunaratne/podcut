@@ -7,6 +7,8 @@ struct GeneralChatView: View {
     @State private var assistant = ChatAssistant()
     @State private var inputText = ""
     @State private var isAnimatingDots = false
+    @State private var smartSuggestions: [String] = []
+    @State private var isLoadingSuggestions = false
 
     var body: some View {
         NavigationStack {
@@ -77,6 +79,9 @@ struct GeneralChatView: View {
             assistant.favoritesStore = favorites
             assistant.playerManager = player
         }
+        .task {
+            await fetchSmartSuggestions()
+        }
     }
 
     // MARK: - Welcome
@@ -107,20 +112,44 @@ struct GeneralChatView: View {
             }
 
             // Glass suggestion chips
-            FlowLayout(spacing: 8) {
-                ForEach(assistant.generateSuggestions(), id: \.self) { suggestion in
-                    Button {
-                        inputText = suggestion
-                        sendMessage()
-                    } label: {
-                        Text(suggestion)
-                            .font(.subheadline)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 9)
+            VStack(spacing: 12) {
+                FlowLayout(spacing: 8) {
+                    let suggestions = smartSuggestions.isEmpty ? assistant.generateSuggestions() : smartSuggestions
+                    ForEach(suggestions, id: \.self) { suggestion in
+                        Button {
+                            inputText = suggestion
+                            sendMessage()
+                        } label: {
+                            Text(suggestion)
+                                .font(.subheadline)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                        }
+                        .glassEffect(.regular, in: .capsule)
+                        .buttonStyle(.plain)
                     }
-                    .glassEffect(.regular, in: .capsule)
-                    .buttonStyle(.plain)
                 }
+
+                Button {
+                    Task { await fetchSmartSuggestions() }
+                } label: {
+                    HStack(spacing: 6) {
+                        if isLoadingSuggestions {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.caption)
+                        }
+                        Text(isLoadingSuggestions ? "Getting suggestions…" : "More")
+                            .font(.caption.weight(.medium))
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                }
+                .glassEffect(.regular, in: .capsule)
+                .buttonStyle(.plain)
+                .disabled(isLoadingSuggestions)
             }
             .padding(.horizontal, 24)
 
@@ -404,6 +433,15 @@ struct GeneralChatView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .glassEffect(.regular, in: .rect)
+    }
+
+    // MARK: - Smart Suggestions
+
+    private func fetchSmartSuggestions() async {
+        guard !isLoadingSuggestions else { return }
+        isLoadingSuggestions = true
+        smartSuggestions = await assistant.loadSmartSuggestions()
+        isLoadingSuggestions = false
     }
 
     // MARK: - Send

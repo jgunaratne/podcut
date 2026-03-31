@@ -277,6 +277,61 @@ final class ChatAssistant {
         ])
     }
 
+    // MARK: - Smart Suggestions
+
+    func loadSmartSuggestions() async -> [String] {
+        let fallback = generateSuggestions()
+
+        do {
+            // Fetch context: trending podcasts + subscriptions.
+            async let trendingTask = searchService.fetchTopPodcasts(limit: 6)
+            let trending = (try? await trendingTask) ?? []
+            let subs = favoritesStore?.podcasts ?? []
+
+            let trendingNames = trending.map { "\($0.collectionName) (\($0.primaryGenreName ?? "Podcast"))" }.joined(separator: ", ")
+            let subNames = subs.prefix(6).map { "\($0.collectionName) (\($0.primaryGenreName ?? "Podcast"))" }.joined(separator: ", ")
+
+            var contextParts: [String] = []
+            if !trendingNames.isEmpty { contextParts.append("Trending podcasts: \(trendingNames)") }
+            if !subNames.isEmpty { contextParts.append("User's subscriptions: \(subNames)") }
+
+            guard !contextParts.isEmpty else { return fallback }
+
+            let prompt = """
+            \(contextParts.joined(separator: ". ")).
+
+            Generate 4-5 specific, engaging suggestion prompts a user might tap in a podcast assistant app. \
+            Make them specific to the real podcast names and topics above. \
+            Return ONLY a JSON array of strings, nothing else. Example: ["prompt one","prompt two"]
+            """
+
+            let oneShot = FirebaseAI.firebaseAI(backend: .googleAI())
+                .generativeModel(
+                    modelName: "gemini-2.5-flash-lite",
+                    generationConfig: GenerationConfig(temperature: 0.9, maxOutputTokens: 256)
+                )
+
+            let response = try await oneShot.generateContent(prompt)
+            guard let raw = response.text else { return fallback }
+
+            // Strip any markdown fences before parsing.
+            let cleaned = raw
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "```json", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let data = cleaned.data(using: .utf8),
+                  let parsed = try? JSONDecoder().decode([String].self, from: data),
+                  !parsed.isEmpty
+            else { return fallback }
+
+            return parsed
+        } catch {
+            return fallback
+        }
+    }
+
     // MARK: - Suggestions
 
     func generateSuggestions() -> [String] {
